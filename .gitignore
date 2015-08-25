@@ -3,6 +3,7 @@
 *.pyc
 
 data/
+tools/
 src/*.pyc
 
 !.gitignore
