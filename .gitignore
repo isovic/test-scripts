@@ -1,0 +1,11 @@
+!*.*
+!*.py
+*.pyc
+
+data/
+src/*.pyc
+
+!.gitignore
+!README.md
+!LICENSE
+# !src/fig3cd.py
