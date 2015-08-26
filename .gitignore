@@ -1,9 +1,18 @@
 !*.*
 !*.py
 *.pyc
+*.tee
 
-data/
+!data/hmm-backup/hmm-ecoliR7.3-last.txt
+!data/hmm-backup/hmm-ecoliR7.3-graphmap.txt
+data/reads*/
+data/reference/
+data/out/
+data/hmm/
 tools/
+temp/
+jobTree/
+jobs/
 src/*.pyc
 
 !.gitignore
