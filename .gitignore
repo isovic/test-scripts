@@ -9,6 +9,7 @@ data/reads*/
 data/reference/
 data/out/
 data/hmm/
+data/backup/
 tools/
 temp/
 jobTree/
