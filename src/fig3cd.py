@@ -45,32 +45,113 @@ def setup_tools():
 
 def main():
 	setup_tools();
-	
-	if (not os.path.exists('%s/../data/out/fig3cd/' % (SCRIPT_PATH))):
-		execute_command('mkdir -p %s/../data/out/fig3cd/' % (SCRIPT_PATH));
+
+	# run_all_mappers(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH));
+	run_all_mappers(('%s/../data/mutated-reference/mutated_ecoli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'mutecoli_ecoliR7.3', '%s/../data/out/mutecoli_ecoliR7.3_1/' % (SCRIPT_PATH));
+
+def run_all_mappers(orig_reference, orig_reads, dataset_name, out_path):
+	if (not os.path.exists(out_path)):
+		# execute_command('mkdir -p %s/../data/out/fig3cd/' % (SCRIPT_PATH));
+		execute_command('mkdir -p %s' % out_path);
 
 # /usr/bin/time marginAlign/marginAlign $READS $REFERENCE data/marginAlign-graphmap-ecoliR7.3-all.sam --graphmap --jobTree ./jobTree-2d-wgraphmap --em --maxThreads=12 --logInfo --defaultMemory=100000000000 --defaultCpu=12
 	num_threads = multiprocessing.cpu_count() / 2;
 
-	orig_reads = '%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % (SCRIPT_PATH);
-	orig_reference = '%s/../data/reference/escherichia_coli.fa' % (SCRIPT_PATH);
-	reads = '%s/../data/reads-ecoliR7.3/ecoliR7.3-marginalign.fastq' % (SCRIPT_PATH);
-	reference = '%s/../data/reference/escherichia_coli-nospecchar.fa' % (SCRIPT_PATH);
-	out_collect_file = '%s/../data/out/fig3cd/collected.csv' % (SCRIPT_PATH);
+	# orig_reads = '%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % (SCRIPT_PATH);
+	# orig_reference = '%s/../data/reference/escherichia_coli.fa' % (SCRIPT_PATH);
+	# reads = '%s/../data/reads-ecoliR7.3/ecoliR7.3-marginalign.fastq' % (SCRIPT_PATH);
+	# reference = '%s/../data/reference/escherichia_coli-nospecchar.fa' % (SCRIPT_PATH);
+	reads = '%s-marginalign.fastq' % (os.path.splitext(orig_reads)[0]);
+	reference = '%s-nospecchar.fa' % (os.path.splitext(orig_reads)[0]);
 
-	dataset_name = os.path.splitext(os.path.basename(orig_reads))[0];
+	out_collect_file = '%s/collected.csv' % (out_path);
+
+	# dataset_name = os.path.splitext(os.path.basename(orig_reads))[0];
 	sys.stderr.write('Dataset name: "%s".\n' % (dataset_name));
 	
 	if (not os.path.exists(reads)):
 		execute_command('%s/../tools/samscripts/src/fastqfilter.py marginalign %s %s' % (SCRIPT_PATH, orig_reads, reads));
 	if (not os.path.exists(reference)):
 		execute_command('%s/../tools/samscripts/src/fastqfilter.py specialchars %s %s' % (SCRIPT_PATH, orig_reference, reference));
+
+
+
+	out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		reads = orig_reads[0:-1] + 'a';
+		if (orig_reads[-1] == 'q'):
+			execute_command('%s/../../../golden-bundle/src/fastq2fasta.py %s %s' % (SCRIPT_PATH, orig_reads, reads));
+		execute_command('%s/aligneval/wrappers/wrapper_daligner.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
+#		execute_command('%s/wrapper-dev/wrapper_daligner.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), os.path.basename(out_sam)));
+		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/GraphMap-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		reads = orig_reads;
+		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s nanoporecirc %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+
+	out_sam = '%s/GraphMap-anchor-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		reads = orig_reads;
+		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s anchorcirc %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+
+	out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		reads = orig_reads;
+		execute_command('%s/aligneval/wrappers/wrapper_lastal.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_eference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+
+	out_sam = '%s/BWAMEM-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		reads = orig_reads;
+		execute_command('%s/aligneval/wrappers/wrapper_bwamem.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+
+	out_sam = '%s/BLASR-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		reads = orig_reads;
+		execute_command('%s/aligneval/wrappers/wrapper_blasr.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+
+
 	
 	### Run marginAlign default.
-	out_sam = '%s/../data/out/fig3cd/marginAlign-ecoliR7.3_all-last.sam' % (SCRIPT_PATH);
+	out_sam = '%s/marginAlign-%s-last.sam' % (out_path, dataset_name);
 	if (not os.path.exists(out_sam)):
-		memtime_file = '%s/../data/out/fig3cd/marginAlign-ecoliR7.3_all-last.memtime' % (SCRIPT_PATH);
-		output_model_file = '%s/../data/hmm/hmm-ecoliR7.3-last.txt' % (SCRIPT_PATH);
+		# memtime_file = '%s/marginAlign-%s-last.memtime' % (out_path, dataset_name);
+		memtime_file = '%s.memtime' % (os.path.splitext(out_sam)[0]);
+		output_model_file = '%s/../data/hmm/hmm-%s-last.txt' % (SCRIPT_PATH, dataset_name);
 		jobtree = '%s/../jobTree' % (SCRIPT_PATH);
 		if (os.path.exists(jobtree)):
 			execute_command('rm -r %s' % (jobtree));
@@ -78,16 +159,16 @@ def main():
 			execute_command('%s %s/marginAlign/marginAlign %s %s %s --jobTree %s --em --outputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
 		else:
 			execute_command('%s %s/marginAlign/marginAlign %s %s %s --jobTree %s --inputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
-		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 	else:
 		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
 	### Run marginAlign with GraphMap.
-	out_sam = '%s/../data/out/fig3cd/marginAlign-ecoliR7.3_all-graphmap.sam' % (SCRIPT_PATH);
+	out_sam = '%s/marginAlign-%s-graphmap.sam' % (out_path, dataset_name);
 	if (not os.path.exists(out_sam)):
 		memtime_file = '%s.memtime' % (os.path.splitext(out_sam)[0]);
-		output_model_file = '%s/../data/hmm/hmm-ecoliR7.3-graphmap.txt' % (SCRIPT_PATH);
+		output_model_file = '%s/../data/hmm/hmm-%s-graphmap.txt' % (SCRIPT_PATH, dataset_name);
 		jobtree = '%s/../jobTree' % (SCRIPT_PATH);
 		if (os.path.exists(jobtree)):
 			execute_command('rm -r %s' % (jobtree));
@@ -95,18 +176,17 @@ def main():
 			execute_command('%s %s/marginAlign/marginAlign %s %s %s --graphmap --jobTree %s --em --outputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
 		else:
 			execute_command('%s %s/marginAlign/marginAlign %s %s %s --graphmap --jobTree %s --inputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
-		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 	else:
 		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 #		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
 	### Run marginAlign with GraphMap.
-	out_sam = '%s/../data/out/fig3cd/marginAlign-ecoliR7.3_all-graphmap_anchor.sam' % (SCRIPT_PATH);
+	out_sam = '%s/marginAlign-%s-graphmap_anchor.sam' % (out_path, dataset_name);
 	if (not os.path.exists(out_sam)):
-#		memtime_file = '%s/../data/out/fig3cd/marginAlign-ecoliR7.3_all-graphmap_anchor.memtime' % (SCRIPT_PATH);
 		memtime_file = '%s.memtime' % (os.path.splitext(out_sam)[0]);
-		output_model_file = '%s/../data/hmm/hmm-ecoliR7.3-graphmap_anchor.txt' % (SCRIPT_PATH);
+		output_model_file = '%s/../data/hmm/hmm-%s-graphmap_anchor.txt' % (SCRIPT_PATH, dataset_name);
 		jobtree = '%s/../jobTree' % (SCRIPT_PATH);
 		if (os.path.exists(jobtree)):
 			execute_command('rm -r %s' % (jobtree));
@@ -114,79 +194,14 @@ def main():
 			execute_command('%s %s/marginAlign/marginAlign %s %s %s --graphmapanchor --jobTree %s --em --outputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
 		else:
 			execute_command('%s %s/marginAlign/marginAlign %s %s %s --graphmapanchor --jobTree %s --inputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
-		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 	else:
 		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 #		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
-	out_sam = '%s/../data/out/fig3cd/DALIGNER-ecoliR7.3.sam' % (SCRIPT_PATH);
-	if (not os.path.exists(out_sam)):
-		reads = orig_reads[0:-1] + 'a';
-		if (orig_reads[-1] == 'q'):
-			execute_command('%s/../../../golden-bundle/src/fastq2fasta.py %s %s' % (SCRIPT_PATH, orig_reads, reads));
-		execute_command('%s/aligneval/wrappers/wrapper_daligner.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), 'ecoliR7.3'));
-#		execute_command('%s/wrapper-dev/wrapper_daligner.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), os.path.basename(out_sam)));
-		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
-		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
-	out_sam = '%s/../data/out/fig3cd/GraphMap-ecoliR7.3.sam' % (SCRIPT_PATH);
-	if (not os.path.exists(out_sam)):
-		reads = orig_reads;
-		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s nanoporecirc %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), 'ecoliR7.3'));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-#		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
 
-	out_sam = '%s/../data/out/fig3cd/GraphMap-anchor-ecoliR7.3.sam' % (SCRIPT_PATH);
-	if (not os.path.exists(out_sam)):
-		reads = orig_reads;
-		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s anchorcirc %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), 'anchor-ecoliR7.3'));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-#		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-
-	out_sam = '%s/../data/out/fig3cd/LAST-ecoliR7.3.sam' % (SCRIPT_PATH);
-	if (not os.path.exists(out_sam)):
-		reads = orig_reads;
-		execute_command('%s/aligneval/wrappers/wrapper_lastal.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), 'ecoliR7.3'));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_eference, reads, out_collect_file));
-#		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-
-	out_sam = '%s/../data/out/fig3cd/BWAMEM-ecoliR7.3.sam' % (SCRIPT_PATH);
-	if (not os.path.exists(out_sam)):
-		reads = orig_reads;
-		execute_command('%s/aligneval/wrappers/wrapper_bwamem.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), 'ecoliR7.3'));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-#		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-
-	out_sam = '%s/../data/out/fig3cd/BLASR-ecoliR7.3.sam' % (SCRIPT_PATH);
-	if (not os.path.exists(out_sam)):
-		reads = orig_reads;
-		execute_command('%s/aligneval/wrappers/wrapper_blasr.py run %s %s nanopore %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), 'ecoliR7.3'));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-#		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-#		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
-		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
 
 
 

@@ -7,6 +7,7 @@
 !data/hmm-backup/hmm-ecoliR7.3-graphmap.txt
 data/reads*/
 data/reference/
+data/mutated-reference/
 data/out/
 data/hmm/
 data/backup/
