@@ -62,7 +62,7 @@ def run_all_mappers(orig_reference, orig_reads, dataset_name, out_path):
 	# reads = '%s/../data/reads-ecoliR7.3/ecoliR7.3-marginalign.fastq' % (SCRIPT_PATH);
 	# reference = '%s/../data/reference/escherichia_coli-nospecchar.fa' % (SCRIPT_PATH);
 	reads = '%s-marginalign.fastq' % (os.path.splitext(orig_reads)[0]);
-	reference = '%s-nospecchar.fa' % (os.path.splitext(orig_reads)[0]);
+	reference = '%s-nospecchar.fa' % (os.path.splitext(orig_reference)[0]);
 
 	out_collect_file = '%s/collected.csv' % (out_path);
 
@@ -90,7 +90,7 @@ def run_all_mappers(orig_reference, orig_reads, dataset_name, out_path):
 		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
 	out_sam = '%s/GraphMap-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
+	if ((not os.path.exists(out_sam))):
 		reads = orig_reads;
 		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s nanoporecirc %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
 		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
@@ -101,15 +101,26 @@ def run_all_mappers(orig_reference, orig_reads, dataset_name, out_path):
 		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
 
 	out_sam = '%s/GraphMap-anchor-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
+	if (not (os.path.exists(out_sam))):
 		reads = orig_reads;
-		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s anchorcirc %s %s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
+		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s anchorcirc %s anchor-%s' % (tools_path, reads, orig_reference, os.path.dirname(out_sam), dataset_name));
 		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
 	else:
 		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 #		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
 		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
 		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+
+#	out_sam = '%s/GraphMap-anchor_new-%s.sam' % (out_path, dataset_name);
+#	if (not (os.path.exists(out_sam))):
+#		reads = orig_reads;
+#		execute_command('/home/isovic/graphmap/git/graphmap/bin/graphmap-not_release -a anchor -B 0 -b 3 -v 5 -r %s -d %s -o %s' % (orig_reference, orig_reads, out_sam));
+#		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+#	else:
+#		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+##		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+#		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
+#		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
 
 	out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
 	if (not os.path.exists(out_sam)):
@@ -145,30 +156,14 @@ def run_all_mappers(orig_reference, orig_reads, dataset_name, out_path):
 		# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, orig_reference, reads, out_collect_file));
 
 
-	
-	### Run marginAlign default.
-	out_sam = '%s/marginAlign-%s-last.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
-		# memtime_file = '%s/marginAlign-%s-last.memtime' % (out_path, dataset_name);
-		memtime_file = '%s.memtime' % (os.path.splitext(out_sam)[0]);
-		output_model_file = '%s/../data/hmm/hmm-%s-last.txt' % (SCRIPT_PATH, dataset_name);
-		jobtree = '%s/../jobTree' % (SCRIPT_PATH);
-		if (os.path.exists(jobtree)):
-			execute_command('rm -r %s' % (jobtree));
-		if (not os.path.exists(output_model_file)):
-			execute_command('%s %s/marginAlign/marginAlign %s %s %s --jobTree %s --em --outputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
-		else:
-			execute_command('%s %s/marginAlign/marginAlign %s %s %s --jobTree %s --inputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
-		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
-
 	### Run marginAlign with GraphMap.
 	out_sam = '%s/marginAlign-%s-graphmap.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
+	if ((not os.path.exists(out_sam))):
+		reads = '%s-marginalign.fastq' % (os.path.splitext(orig_reads)[0]);
+		reference = '%s-nospecchar.fa' % (os.path.splitext(orig_reference)[0]);
 		memtime_file = '%s.memtime' % (os.path.splitext(out_sam)[0]);
-		output_model_file = '%s/../data/hmm/hmm-%s-graphmap.txt' % (SCRIPT_PATH, dataset_name);
+#		output_model_file = '%s/../data/hmm/hmm-%s-graphmap.txt' % (SCRIPT_PATH, dataset_name);
+		output_model_file = '%s/../data/hmm/hmm-ecoliR7.3-graphmap.txt' % (SCRIPT_PATH);
 		jobtree = '%s/../jobTree' % (SCRIPT_PATH);
 		if (os.path.exists(jobtree)):
 			execute_command('rm -r %s' % (jobtree));
@@ -184,9 +179,13 @@ def run_all_mappers(orig_reference, orig_reads, dataset_name, out_path):
 
 	### Run marginAlign with GraphMap.
 	out_sam = '%s/marginAlign-%s-graphmap_anchor.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
+	if ((not os.path.exists(out_sam))):
+		reads = '%s-marginalign.fastq' % (os.path.splitext(orig_reads)[0]);
+		reference = '%s-nospecchar.fa' % (os.path.splitext(orig_reference)[0]);
 		memtime_file = '%s.memtime' % (os.path.splitext(out_sam)[0]);
-		output_model_file = '%s/../data/hmm/hmm-%s-graphmap_anchor.txt' % (SCRIPT_PATH, dataset_name);
+
+#		output_model_file = '%s/../data/hmm/hmm-%s-graphmap_anchor.txt' % (SCRIPT_PATH, dataset_name);
+		output_model_file = '%s/../data/hmm/hmm-ecoliR7.3-graphmap_anchor.txt' % (SCRIPT_PATH);
 		jobtree = '%s/../jobTree' % (SCRIPT_PATH);
 		if (os.path.exists(jobtree)):
 			execute_command('rm -r %s' % (jobtree));
@@ -198,6 +197,27 @@ def run_all_mappers(orig_reference, orig_reads, dataset_name, out_path):
 	else:
 		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 #		execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+		
+	### Run marginAlign default.
+	out_sam = '%s/marginAlign-%s-last.sam' % (out_path, dataset_name);
+	if ((not os.path.exists(out_sam))):
+		# memtime_file = '%s/marginAlign-%s-last.memtime' % (out_path, dataset_name);
+		reads = '%s-marginalign.fastq' % (os.path.splitext(orig_reads)[0]);
+		reference = '%s-nospecchar.fa' % (os.path.splitext(orig_reference)[0]);
+		memtime_file = '%s.memtime' % (os.path.splitext(out_sam)[0]);
+#		output_model_file = '%s/../data/hmm/hmm-%s-last.txt' % (SCRIPT_PATH, dataset_name);
+		output_model_file = '%s/../data/hmm/hmm-ecoliR7.3-last.txt' % (SCRIPT_PATH);
+		jobtree = '%s/../jobTree' % (SCRIPT_PATH);
+		if (os.path.exists(jobtree)):
+			execute_command('rm -r %s' % (jobtree));
+		if (not os.path.exists(output_model_file)):
+			execute_command('%s %s/marginAlign/marginAlign %s %s %s --jobTree %s --em --outputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
+		else:
+			execute_command('%s %s/marginAlign/marginAlign %s %s %s --jobTree %s --inputModel=%s --maxThreads=%d --logInfo --defaultMemory=100000000000 --defaultCpu=%d' % (measure_command_wrapper(memtime_file), tools_path, reads, reference, out_sam, jobtree, output_model_file, num_threads, num_threads));
+		execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 		execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
 
