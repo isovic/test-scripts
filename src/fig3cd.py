@@ -48,8 +48,56 @@ def main():
 
 	# run_all_mappers(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH));
 	# run_all_mappers(('%s/../data/mutated-reference/mutated_ecoli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'mutecoli_ecoliR7.3', '%s/../data/out/mutecoli_ecoliR7.3_1/' % (SCRIPT_PATH));
-	run_all_mappers(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fasta' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv/' % (SCRIPT_PATH));
-	run_all_mappers(('%s/../data/reference_for_sv/escherichia_coli-indel_events.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fasta' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv/' % (SCRIPT_PATH));
+
+#	run_all_mappers(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fastq' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv-normal_ref/' % (SCRIPT_PATH));
+#	run_all_mappers(('%s/../data/reference_for_sv/escherichia_coli-indel_events.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fastq' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv-indel_ref/' % (SCRIPT_PATH));
+	evaluate_alignments(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), '%s/../data/out/mutecoli_ecoliR7.3_on_original_ref' % (SCRIPT_PATH), 'mutecoli_ecoliR7.3');
+
+def evaluate_alignments(reference, reads, out_path, dataset_name):
+	out_collect_file = '%s/collected.csv' % (out_path);
+
+	out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file hcalc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/GraphMap-%s.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+#	execute_command('%s/samscripts/src/alignmentstats.py file 1 %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/GraphMap-anchor-%s.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+#	execute_command('%s/samscripts/src/alignmentstats.py file 1 %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+#	execute_command('%s/samscripts/src/alignmentstats.py file 1 %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/BWAMEM-%s.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+#	execute_command('%s/samscripts/src/alignmentstats.py file 1 %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/BLASR-%s.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+#	execute_command('%s/samscripts/src/alignmentstats.py file 1 %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/marginAlign-%s-graphmap.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file 1 %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/marginAlign-%s-last.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file 1 %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/marginAlign-%s-graphmap_anchor.sam' % (out_path, dataset_name);
+#	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+	execute_command('%s/samscripts/src/alignmentstats.py file 1 %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+
 
 ### Params:
 ### 	orig_reference is the reference to which to map to.
