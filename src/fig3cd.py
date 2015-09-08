@@ -36,7 +36,7 @@ def RUN_AMPLICON_TEST():
 	reads = '%s/../data/amplicons-f1000/reads/reads_all-f1000.fastq' % (SCRIPT_PATH);
 	dataset_name = 'f1000amplicons';
 	out_path = '%s/../data/out/f1000amplicons/' % (SCRIPT_PATH);
-	run_all_mappers_only(reference, reads, 'nanopore', dataset_name, out_path, do_not_recalc=True, is_circular=False);
+	run_all_mappers_only(reference, reads, 'nanopore', out_path, dataset_name, do_not_recalc=True, is_circular=False);
 
 
 
@@ -144,6 +144,7 @@ def collect_alignments(reference, reads, dataset_name, out_path):
 ###		out_path is the path to the folder
 def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, machine_name, do_not_recalc=True, is_circular=True):
 	if (not os.path.exists(out_path)):
+		sys.stderr.write('Creating output path: "%s".\n' % out_path);
 		execute_command('mkdir -p %s' % out_path);
 	num_threads = multiprocessing.cpu_count() / 2;
 	reads_basename = os.path.basename(os.path.splitext(orig_reads)[0]);
