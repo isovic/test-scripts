@@ -8,12 +8,19 @@ import multiprocessing;
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__));
 tools_path = '%s/../tools' % (SCRIPT_PATH);
 
+sys.path.append('%s/../tools/samscripts/src/' % (SCRIPT_PATH));
+import fastqparser;
+
+
+
 def main():
 	setup_tools();
 	# RUN_CONSENSUS_TEST();
 	# RUN_MUTATED_REFERENCE_TEST();
 	# RUN_SV_TEST();
 	RUN_AMPLICON_TEST();
+
+	# RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
 
 def RUN_CONSENSUS_TEST():
 	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH), 'nanopore');
@@ -27,16 +34,21 @@ def RUN_MUTATED_REFERENCE_TEST():
 	### Evaluate mappings on the mutated reference on the original non-mutated reference.
 	evaluate_alignments(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'mutecoli_ecoliR7.3', '%s/../data/out/mutecoli_ecoliR7.3_on_original_ref' % (SCRIPT_PATH));
 
+def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
+	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.0001, 'temp/mutated-refs/');
+
 def RUN_SV_TEST():
 	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fastq' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv-normal_ref/' % (SCRIPT_PATH), 'nanopore');
 	run_all_mappers_only(('%s/../data/reference_for_sv/escherichia_coli-indel_events.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fastq' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv-indel_ref/' % (SCRIPT_PATH), 'nanopore');
 
 def RUN_AMPLICON_TEST():
 	reference = '%s/../data/amplicons-f1000/reference/ref_chr6_chr22-hg19_v38.fa' % (SCRIPT_PATH);
-	reads = '%s/../data/amplicons-f1000/reads/reads_all-f1000.fastq' % (SCRIPT_PATH);
+	reads = '%s/../data/amplicons-f1000/reads/reads_2d-f1000.fastq' % (SCRIPT_PATH);
 	dataset_name = 'f1000amplicons';
 	out_path = '%s/../data/out/f1000amplicons/' % (SCRIPT_PATH);
 	run_all_mappers_only(reference, reads, 'nanopore', out_path, dataset_name, do_not_recalc=True, is_circular=False);
+
+
 
 
 
@@ -74,6 +86,10 @@ def setup_tools():
 	
 	if (not os.path.exists('%s/../tools/aligneval' % (SCRIPT_PATH))):
 		execute_command('cd %s/../tools; git clone https://github.com/isovic/aligneval.git; cd aligneval; ./setup.py aligners; ./setup.py tools' % (SCRIPT_PATH));
+
+	if (not os.path.exists('%s/../tools/mutatrix/' % (SCRIPT_PATH))):
+		execute_command('cd %s/../packs; tar -xvf mutatrix.tar.gz' % (SCRIPT_PATH));
+		execute_command('mv packs/mutatrix tools/mutatrix' % (SCRIPT_PATH));
 
 
 
@@ -191,25 +207,74 @@ def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, mac
 
 
 
-	# out_sam = '%s/marginAlign-%s.sam' % (out_path, dataset_name);
-	# if (not os.path.exists(out_sam)):
-	# 	execute_command('%s/aligneval/wrappers/wrapper_marginalign.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-	# else:
-	# 	sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	out_sam = '%s/marginAlign-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		execute_command('%s/aligneval/wrappers/wrapper_marginalign.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	# out_sam = '%s/marginAlignGraphMap-%s.sam' % (out_path, dataset_name);
-	# if (not os.path.exists(out_sam)):
-	# 	execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-	# else:
-	# 	sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	out_sam = '%s/marginAlignGraphMap-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	# out_sam = '%s/marginAlignGraphMap-anchor-%s.sam' % (out_path, dataset_name);
-	# if (not os.path.exists(out_sam)):
-	# 	execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s anchor %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, 'anchor-' + dataset_name));
-	# else:
-	# 	sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	out_sam = '%s/marginAlignGraphMap-anchor-%s.sam' % (out_path, dataset_name);
+	if (not os.path.exists(out_sam)):
+		execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s anchor %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, 'anchor-' + dataset_name));
+	else:
+		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
 
+
+
+
+
+### Mutates the given reference, and writes the mutations in a vcf file.
+def generate_mutated_reference(reference_path, snp_rate, out_path):
+	reference_path = os.path.abspath(reference_path);
+	out_path = os.path.abspath(out_path);
+	if (not os.path.exists(out_path)):
+		os.makedirs(out_path);
+
+	out_prefix = '%s/mutated_%s_%f' % (out_path, os.path.splitext(os.path.basename(reference_path))[0], snp_rate);
+	out_vcf = os.path.abspath('%s.vcf' % (out_prefix));
+	out_rev_vcf = '%s/rev_%s.vcf' % (out_path, os.path.basename(out_prefix));
+	ref_ext = os.path.splitext(reference_path)[-1];
+	out_ref_file = '%s%s' % (out_prefix, ref_ext);
+
+	sys.stderr.write('Mutating the reference using Mutatrix, output VCF file: "%s".\n' % (out_vcf));
+	execute_command('cd %s; %s/mutatrix/mutatrix --snp-rate %f --population-size 1 --microsat-min-len 0 --mnp-ratio 0 --indel-rate 0 --indel-max 0 %s > %s' % (out_path, tools_path, snp_rate, reference_path, out_vcf));
+
+	sys.stderr.write('Reversing the SNP bases in the VCF file, output VCF file: "%s".\n' % (out_rev_vcf));
+	execute_command(r"cat %s | awk -F '\t' 'BEGIN {OFS = FS} {if ($0 == /^#.*/) print ; else {a=$4; $4=$5; $5=a; print } }' > %s" % (out_vcf, out_rev_vcf));
+
+	sys.stderr.write('Compressing and indexing the VCF file.\n');
+	execute_command('bgzip -c %s > %s.gz' % (out_rev_vcf, out_rev_vcf));
+	execute_command('tabix -p vcf %s.gz' % (out_rev_vcf));
+
+	### Mutatrix splits all reference sequences into separate files. This part of code joins them back into one FASTA file.
+	[headers, lengths] = fastqparser.get_headers_and_lengths(reference_path);
+	print headers;
+	all_files = ['%s/1:%s:0%s' % (out_path, header.split(' ')[0], ref_ext) for header in headers];
+	if (os.path.exists(out_ref_file)):
+		os.rename(out_ref_file, '%s.bak' % (out_ref_file));
+	for ref_file in all_files:
+		### Take care of the special characters.
+		escaped_ref_file = ref_file.replace('|', '\|');
+		execute_command('cat %s >> %s' % (escaped_ref_file, out_ref_file));
+		if (len(ref_file) > 0 and ('*' in ref_file) == False):
+			print 'Removing file: "%s".' % (ref_file);
+			os.remove(ref_file);
+
+
+
+
+
+
+# cat ../data-in/mutated-reference/mutants.vcf | awk -F '\t' 'BEGIN {OFS = FS} {if ($0 == /^#.*/) print ; else {a=$4; $4=$5; $5=a; print } }' > ../data-in/mutated-reference/rev_mutants.vcf
+# bgzip -c ../data-in/mutated-reference/rev_mutants.vcf > ../data-in/mutated-reference/rev_mutants.vcf.gz
+# tabix -p vcf ../data-in/mutated-reference/rev_mutants.vcf.gz
 
 
 
