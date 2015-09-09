@@ -67,35 +67,41 @@ def RUN_AMPLICON_TEST():
 	dryrun = True;
 
 	sam_out_folder = '%s/inregion/' % (out_path);
-	sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
-	current_region = 0;
-	while (current_region < len(regions)):
-	# for region in regions:
-		region = regions[current_region];
-		region_name = region[1];
-		sys.stderr.write('Running region %s:' % (region[1]));
+	# sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
+	sam_files = [
+#					'%s/marginAlign-nanopore.sam' % (out_path),
+					'%s/marginAlignGraphMap-nanopore.sam' % (out_path),
+					'%s/marginAlignGraphMap-anchor-nanopore.sam' % (out_path) ];
 
-		region_to_use = region;
-		if ('marginalign' in os.path.basename(sam_path).lower()):
-			# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
-			region = regions_marginAlign[current_region];
+	### Process all given SAM files.
+	for sam_path in sam_files:
+		current_region = 0;
+		while (current_region < len(regions)):
+		# for region in regions:
+			region = regions[current_region];
+			region_name = region[1];
+			sys.stderr.write('Running region %s:' % (region[1]));
 
-		### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
-		[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
-		sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
+			region_to_use = region;
+			if ('marginalign' in os.path.basename(sam_path).lower()):
+				# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
+				region = regions_marginAlign[current_region];
 
-		if ('marginalign' in os.path.basename(sam_path).lower()):
-			# sam_2d_reads_in_region = '%s.sam' % (os.path.splitext(bam_2d_reads_in_region)[0]);
-			sam_2d_reads_in_region = bam_2d_reads_in_region.replace('-sorted.bam', '.sam');
-			marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
-			out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
-			jobtree = 'jobTree';
-			if (os.path.exists(jobtree)):
-				execute_command('rm -r %s' % (jobtree));
-			execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
+			### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
+			[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
+			sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 
-		current_region += 1;
+			if ('marginalign' in os.path.basename(sam_path).lower()):
+				# sam_2d_reads_in_region = '%s.sam' % (os.path.splitext(bam_2d_reads_in_region)[0]);
+				sam_2d_reads_in_region = bam_2d_reads_in_region.replace('-sorted.bam', '.sam');
+				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
+				out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
+				jobtree = 'jobTree';
+				if (os.path.exists(jobtree)):
+					execute_command('rm -r %s' % (jobtree));
+				execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
 
+			current_region += 1;
 
 
 
@@ -342,6 +348,14 @@ def filter_spanning_reads(dry_run, region, reads_path, sam_in_path, sam_out_fold
 	if not os.path.exists(sam_out_folder):
 		sys.stderr.write('Creating folder "%s".\n' % (sam_out_folder));
 		os.makedirs(sam_out_folder);
+
+	if (('marginalign' in os.path.basename(sam_in_path).lower())):
+		sam_basename = os.path.basename(os.path.splitext(sam_in_path)[0]);
+		sys.stderr.write('[-2] Removing special characters from the SAM qnames and rnames.\n');
+		execute_command_w_dryrun(dry_run, '%s/samfilter.py marginalign %s %s/%s-nospecialchars.sam' % (SAMSCRIPTS, sam_in_path, sam_out_folder, sam_basename));
+		sys.stderr.write('[-1] Generating the alignment score so that alignments can be comparable.\n');
+		execute_command_w_dryrun(dry_run, '%s/samfilter.py generateAS %s %s/%s-nospecialchars.sam %s/%s-nospecialchars-with_AS.sam' % (SAMSCRIPTS, reference_path, sam_out_folder, sam_basename, sam_out_folder, sam_basename));
+		sam_in_path = '%s/%s-nospecialchars-with_AS.sam' % (sam_out_folder, os.path.basename(os.path.splitext(sam_in_path)[0]));
 
 	# if (('last' in os.path.basename(sam_in_path).lower()) or ('marginalign' in os.path.basename(sam_in_path).lower())):
 	# 	sys.stderr.write('[0] Adding quality values to alignments...\n');
