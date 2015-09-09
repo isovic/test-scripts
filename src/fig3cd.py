@@ -85,13 +85,14 @@ def RUN_AMPLICON_TEST():
 		sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 
 		if ('marginalign' in os.path.basename(sam_path).lower()):
-			sam_2d_reads_in_region = '%s.sam' % (os.path.splitext(bam_2d_reads_in_region)[0]);
+			# sam_2d_reads_in_region = '%s.sam' % (os.path.splitext(bam_2d_reads_in_region)[0]);
+			sam_2d_reads_in_region = bam_2d_reads_in_region.replace('-sorted.bam', '.sam');
 			marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
 			out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
 			jobtree = 'jobTree';
 			if (os.path.exists(jobtree)):
 				execute_command('rm -r %s' % (jobtree));
-			execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree);
+			execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
 
 		current_region += 1;
 
