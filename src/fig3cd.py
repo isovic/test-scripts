@@ -63,6 +63,9 @@ def RUN_AMPLICON_TEST():
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:29909854-29913805', 'HLA-A'],
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:31321279-31325303', 'HLA-B']];
 
+	# dryrun = False;
+	dryrun = True;
+
 	sam_out_folder = '%s/inregion/' % (out_path);
 	sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
 	current_region = 0;
@@ -78,8 +81,18 @@ def RUN_AMPLICON_TEST():
 			region = regions_marginAlign[current_region];
 
 		### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
-		[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(True, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
+		[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
 		sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
+
+		if ('marginalign' in os.path.basename(sam_path).lower()):
+			sam_2d_reads_in_region = '%s.sam' % (os.path.splitext(bam_2d_reads_in_region)[0]);
+			marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
+			out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
+			jobtree = 'jobTree';
+			if (os.path.exists(jobtree)):
+				execute_command('rm -r %s' % (jobtree));
+			execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree);
+
 		current_region += 1;
 
 
