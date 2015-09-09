@@ -63,8 +63,8 @@ def RUN_AMPLICON_TEST():
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:29909854-29913805', 'HLA-A'],
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:31321279-31325303', 'HLA-B']];
 
-	# dryrun = False;
-	dryrun = True;
+	dryrun = False;
+	# dryrun = True;
 
 	sam_out_folder = '%s/inregion/' % (out_path);
 	# sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
