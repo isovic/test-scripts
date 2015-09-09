@@ -389,11 +389,11 @@ def filter_spanning_reads(dry_run, region, reads_path, sam_in_path, sam_out_fold
 	# execute_command_w_dryrun('%s/samfilter.py regionpartial "%s" %s %s' % (SAMSCRIPTS, region[0], temp_sam_uniquebest, temp_uniquebest_region));
 	sys.stderr.write('\n');
 
-	# if ('graphmap' in os.path.basename(sam_in_path).lower()):
-	# 	sys.stderr.write('[2.1] Filtering by E-value (GraphMap specific) to file "%s"...\n' % (temp_region_uniquebest_evalue));
-	# 	execute_command_w_dryrun(dry_run, '%s/samfilter.py evalue 1 %s %s' % (SAMSCRIPTS, temp_uniquebest_region, temp_region_uniquebest_evalue));
-	# 	sys.stderr.write('\n');
-	# 	temp_before_2d = temp_region_uniquebest_evalue;
+	if ('graphmap' in os.path.basename(sam_in_path).lower()):
+		sys.stderr.write('[2.1] Filtering by E-value (GraphMap specific) to file "%s"...\n' % (temp_region_uniquebest_evalue));
+		execute_command_w_dryrun(dry_run, '%s/samfilter.py evalue 1 %s %s' % (SAMSCRIPTS, temp_uniquebest_region, temp_region_uniquebest_evalue));
+		sys.stderr.write('\n');
+		temp_before_2d = temp_region_uniquebest_evalue;
 
 	temp_1d = '%s/%s-1d.sam' % (sam_out_folder, os.path.basename(os.path.splitext(temp_before_2d)[0]));
 	sys.stderr.write('[3] Extracting only the 1d reads to file "%s"...\n' % (temp_1d));
