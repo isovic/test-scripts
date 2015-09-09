@@ -1,0 +1,221 @@
+#! /usr/bin/python
+
+import os;
+import sys;
+import subprocess;
+import vcffilter;
+
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__));
+# GOLDEN_BUNDLE_SRC = '../../golden-bundle/src/';
+BAMSURGEON_PATH = '../tools/bamsurgeon' % (SCRIPT_PATH);
+
+def execute_command(dry_run, command):
+	sys.stderr.write('Executing command: "%s"\n' % command);
+	if (dry_run == False):
+		subprocess.call(command, shell=True);
+
+def execute_command_with_ret(dry_run, command):
+	sys.stderr.write('Executing command: "%s"\n' % command);
+	if (dry_run == False):
+		p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE);
+
+	[output, err] = p.communicate()
+	rc = p.returncode
+
+	return [rc, output, err];
+
+
+
+def evaluate_vcf(mapper_name, region_name, vcf_file, vcf_mutations_path):
+	# if (vcf_mutations_path.endswith('.gz') == False and os.path.exists(vcf_mutations_path + '.gz') == False):
+	execute_command(False, 'bgzip -c %s > %s.gz' % (vcf_mutations_path, vcf_mutations_path));
+	execute_command(False, 'tabix -f -p vcf %s.gz' % (vcf_mutations_path));
+	if (vcf_mutations_path.endswith('.gz') == False):
+		vcf_mutations_path_gz = vcf_mutations_path + '.gz';
+		# print vcf_mutations_path;
+	else:
+		sys.stderr.write('Truth variants not in .VCF format, but gzipped! Extract them and give some text files!\n');
+		exit(1);
+
+	execute_command(False, 'bgzip -c %s > %s.gz' % (vcf_file, vcf_file));
+	execute_command(False, 'tabix -f -p vcf %s.gz' % (vcf_file));
+	# execute_command('bamsurgeon/etc/evaluator.py -v %s.gz -t %s -m SNV' % (vcf_file, vcf_mutations_path));
+	fn_file = '%s-fn.vcf' % (os.path.splitext(vcf_file)[0]);
+	fp_file = '%s-fp.vcf' % (os.path.splitext(vcf_file)[0]);
+
+	command = '%s/etc/evaluator.py -v %s.gz -t %s -m SNV --fn %s --fp %s' % (BAMSURGEON_PATH, vcf_file, vcf_mutations_path_gz, fn_file, fp_file);
+	[rc, output, err] = execute_command_with_ret(False, command);
+
+	if (rc != 0):
+		sys.stderr.write(str(err));
+		exit(1);
+	lines = output.split('\n');
+
+	results = [0, 0, 0, 0];
+	if (len(lines) > 1 and len(lines[1]) > 0):
+		results = [int(value) for value in lines[1].split()];
+
+	sys.stderr.write('Truth pass counting:\n');
+	sys.stderr.write(vcf_mutations_path + '\n');
+	[num_pass_snps, num_nonpass_snps] = vcffilter.count_nonpass_variants(vcf_mutations_path, verbose=False);
+	results.append(num_pass_snps);
+	results.append(num_nonpass_snps);
+
+	sys.stderr.write('FP pass counting:\n');
+	[num_pass_snps, num_nonpass_snps] = vcffilter.count_nonpass_variants(fp_file, verbose=False);
+	results.append(num_pass_snps);
+	results.append(num_nonpass_snps);
+
+	sys.stderr.write('FN pass counting:\n');
+	[num_pass_snps, num_nonpass_snps] = vcffilter.count_nonpass_variants(fn_file, verbose=False);
+	results.append(num_pass_snps);
+	results.append(num_nonpass_snps);
+
+	return results;
+
+	# execute_command(False, '%s/etc/evaluator.py -v %s.gz -t %s -m SNV --fn %s --fp %s' % (BAMSURGEON_PATH, vcf_file, vcf_mutations_path, fn_file, fp_file));
+
+
+
+def main():
+	reference_path = '%s/../data-in/reference/ref_chr6_chr22-hg19_v38.fa' % (SCRIPT_PATH);
+	reads_path = '%s/../data-in/amplicons-f1000/reads_all.fastq' % (SCRIPT_PATH);
+	vcf_out_folder = '%s/../data-out/4-alignment-haplotyping/processed_vcf/' % (SCRIPT_PATH);
+	sam_out_folder = '%s/../data-out/4-alignment-haplotyping/processed_sam/' % (SCRIPT_PATH);
+
+	out_path = 'results-vc-formatted.csv';
+
+	# sam_name = 'GraphMap-20150524-all_reads.sam';
+	# sam_name = 'GraphMap-20150524-all_reads-anchor.sam';
+
+	# sam_name = 'BWAMEM-20150524-all_reads.sam';
+	# sam_name = 'LAST-20150524-all_reads.sam';
+	# # sam_name = 'BLASR-20150524-all_reads.sam';
+	# sam_name = 'graphmap-params_20150525-all_reads-anchor.sam';
+	# # sam_name = 'marginAlign-haplo-2d-ncbi.sam';
+
+	sam_names = ['BWAMEM-20150524-all_reads.sam',
+				'LAST-20150524-all_reads.sam',
+				'BLASR-20150524-all_reads.sam',
+				'graphmap-params_20150525-all_reads-anchor.sam',
+				'marginAlign-haplo-2d-ncbi.sam'];
+
+	# sam_names = [
+	# 			'marginAlign-haplo-2d-ncbi.sam'
+	# 			];
+	# sam_names = [
+	# 			'graphmap-params_20150525-all_reads-anchor.sam',
+	# 			];
+
+	dry_run = True;
+	# dry_run = False;
+
+	leftalign = False;
+	# leftalign = True;
+
+	regions = [REGION_CYP2D6, REGION_HLAA, REGION_HLAB];
+	# regions = [REGION_HLAA];
+
+	fp_out = open(out_path, 'a');
+
+	for sam_name in sam_names:
+		mapper_name = os.path.splitext(os.path.basename(sam_name))[0].split('-')[0];
+		fp_out.write('Mapper\tRegion\tTP\tFP\tTotal\tTruth\tTruth-PASS\tTruth-NonPASS\tFP-PASS\tFP-NonPASS\tFN-PASS\tFN-NonPASS\n');
+		for region in regions:
+			region_name = region[1];
+			sys.stderr.write('Running region %s:' % (region[1]));
+		# REGION = REGION_CYP2D6;
+			[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dry_run, region, reads_path, '%s/../data-out/4-alignment-haplotyping/%s' % (SCRIPT_PATH, sam_name), sam_out_folder, reference_path=reference_path, leftalign=leftalign);
+			# vcf_file_all = call_variants(REGION_CYP2D6, reference_path, bam_all_reads_in_region, vcf_out_folder);
+			vcf_file_2d = call_variants(region, reference_path, bam_2d_reads_in_region, vcf_out_folder);
+			# vcf_file_1d = call_variants(REGION_CYP2D6, reference_path, bam_1d_reads_in_region, vcf_out_folder);
+			# sys.stdout.flush();
+			# vcf_mutations_path = '../data-in/truth_variants/sorted-variants-dbSNP_and_NA12878-%s_amplicon-splitsnps.vcf' % (region[1]);
+			# vcf_mutations_path = '../data-in/truths-alternative/alterinative1-HetHomVarAll-NA12878-%s-splitsnps.vcf' % (region[1]);
+			vcf_mutations_path = '../data-in/truths-alternative/alterinative1-HetHomVarAll-NA12878-%s.vcf' % (region[1]);
+
+			results = evaluate_vcf(mapper_name, region[1], vcf_file_2d, vcf_mutations_path);
+			fp_out.write('%s\t%s\t%s\n' % (mapper_name, region_name, '\t'.join([str(value) for value in results])));
+			fp_out.flush();
+			# break;
+
+		fp_out.write('\n');
+		fp_out.flush();
+
+	fp_out.close();
+
+
+
+		# sys.stderr.write('-----------------------\n');
+		# sys.stderr.write('Running region HLA-A:\n');
+		# REGION = REGION_HLAA;
+		# [bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dry_run, REGION, reads_path, '%s/../data-out/4-alignment-haplotyping/%s' % (SCRIPT_PATH, sam_name), sam_out_folder);
+		# # vcf_file_all = call_variants(REGION_HLAA, reference_path, bam_all_reads_in_region, vcf_out_folder);
+		# vcf_file_2d = call_variants(REGION_HLAA, reference_path, bam_2d_reads_in_region, vcf_out_folder);
+		# # vcf_file_1d = call_variants(REGION_HLAA, reference_path, bam_1d_reads_in_region, vcf_out_folder);
+		# vcf_mutations_path = '../data-in/truth_variants/sorted-variants-dbSNP_and_NA12878-%s_amplicon-splitsnps.vcf' % (REGION[1]);
+		# process_vcf(vcf_file_2d, vcf_mutations_path);
+
+		# sys.stderr.write('-----------------------\n');
+		# sys.stderr.write('Running region HLA-B:\n');
+		# REGION = REGION_HLAB;
+		# [bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dry_run, REGION, reads_path, '%s/../data-out/4-alignment-haplotyping/%s' % (SCRIPT_PATH, sam_name), sam_out_folder);
+		# # vcf_file_all = call_variants(REGION_HLAB, reference_path, bam_all_reads_in_region, vcf_out_folder);
+		# vcf_file_2d = call_variants(REGION_HLAB, reference_path, bam_2d_reads_in_region, vcf_out_folder);
+		# # vcf_file_1d = call_variants(REGION_HLAB, reference_path, bam_1d_reads_in_region, vcf_out_folder);
+		# vcf_mutations_path = '../data-in/truth_variants/sorted-variants-dbSNP_and_NA12878-%s_amplicon-splitsnps.vcf' % (REGION[1]);
+		# process_vcf(vcf_file_2d, vcf_mutations_path);
+
+
+
+	# bam_2d_reads_in_region = '/home/isovic/work/eclipse-workspace/paper-graphmap/4-haplotyping/../data-out/4-alignment-haplotyping/processed_sam/GraphMap-20150524-all_reads-uniquebest-CYP2D6-evalue-1-2d-sorted.bam';
+	# call_variants(REGION_CYP2D6, reference_path, bam_2d_reads_in_region, vcf_out_folder);
+	# bam_1d_reads_in_region = '../data-out/4-alignment-haplotyping/processed_sam/graphhmap-params_20150525-all_reads-anchor-uniquebest-CYP2D6-1d-sorted.bam';
+	# call_variants(REGION_CYP2D6, reference_path, bam_all_reads_in_region, vcf_out_folder);
+
+	# [bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(REGION_CYP2D6, reads_path, '%s/../data-out/4-alignment-haplotyping/%s' % (SCRIPT_PATH, sam_name), sam_out_folder, reference_path=reference_path, leftalign=True);
+
+	# bam_all_reads_in_region = '../data-out/4-alignment-haplotyping/processed_sam/graphhmap-params_20150525-all_reads-anchor-uniquebest-CYP2D6-sorted.bam';
+
+	# bam_all_reads_in_region = '../data-out/4-alignment-haplotyping/processed_sam/graphhmap-params_20150525-all_reads-anchor-uniquebest-CYP2D6-2d-sorted-leftaligned.bam';
+	# call_variants(REGION_CYP2D6, reference_path, bam_all_reads_in_region, vcf_out_folder);
+
+##########################
+
+	# sam_out_folder = '%s/../data-out/4-alignment-haplotyping/temp/' % (SCRIPT_PATH);
+	# [bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(REGION_HLAA, reads_path, '/home/isovic/work/eclipse-workspace/data/minion-review/10-haplotyping_paper/alignment/LAST-q1.sam', sam_out_folder);
+	# [bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(REGION_HLAB, reads_path, '/home/isovic/work/eclipse-workspace/data/minion-review/10-haplotyping_paper/alignment/LAST-q1.sam', sam_out_folder);
+	# [bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(REGION_CYP2D6, reads_path, '/home/isovic/work/eclipse-workspace/data/minion-review/10-haplotyping_paper/alignment/LAST-q1.sam', sam_out_folder);
+
+	# bam_all_reads_in_region = '/home/isovic/work/eclipse-workspace/paper-graphmap/4-haplotyping/../data-out/4-alignment-haplotyping/processed_sam/GraphMap-20150524-all_reads-uniquebest-CYP2D6-sorted.bam';
+	# bam_all_reads_in_region = '/home/isovic/work/eclipse-workspace/paper-graphmap/4-haplotyping/../data-out/4-alignment-haplotyping/processed_sam/GraphMap-20150524-all_reads-anchor-CYP2D6-uniquebest-evalue-1e-100-sorted.bam';
+	# bam_all_reads_in_region = '/home/isovic/work/eclipse-workspace/paper-graphmap/4-haplotyping/../data-out/4-alignment-haplotyping/processed_sam/GraphMap-20150524-all_reads-anchor-CYP2D6-uniquebest-evalue-1e-100-2d-sorted.bam';
+	# call_variants(REGION_CYP2D6, reference_path, bam_all_reads_in_region, vcf_out_folder);
+	# call_variants(REGION_HLAB, reference_path, bam_2d_reads_in_region, vcf_out_folder);
+
+
+
+if __name__ == "__main__":
+
+	SAMSCRIPTS = '%s/../samscripts' % (SCRIPT_PATH);
+	LOFREQ= '%s/../tools/lofreq/src/lofreq' % (SCRIPT_PATH);
+	TOOLS_PATH = '%s/../tools' % (SCRIPT_PATH);
+
+	# REGION_CYP2D6 = ['gi|224589814|ref|NC_000022.10|:42522613-42526694', 'CYP2D6'];
+	# REGION_CYP2D6 = ['gi|224589814|ref|NC_000022.10|:42496476-42558315', 'CYP2D6'];
+	# REGION_HLAA = ['gi|224589818|ref|NC_000006.11|:29909854-29913805', 'HLA-A'];
+	# REGION_HLAB = ['gi|224589818|ref|NC_000006.11|:31321279-31325303', 'HLA-B'];
+
+	REGION_CYP2D6 = ['gi|224589814|ref|NC_000022.10|:42522077-42527144', 'CYP2D6'];
+	REGION_HLAA = ['gi|224589818|ref|NC_000006.11|:29909854-29913805', 'HLA-A'];
+	REGION_HLAB = ['gi|224589818|ref|NC_000006.11|:31321279-31325303', 'HLA-B'];
+
+# gi|224589814|ref|NC_000022.10|:42,496,476-42,558,315			# Region for CYP2D6
+# gi|224589814|ref|NC_000022.10|:			# Region for CYP2D7
+# gi|224589814|ref|NC_000022.10|:			# Region for CYP2D8
+# gi|224589818|ref|NC_000006.11|:29,909,854-29,913,805				# Region for HLA-A
+# gi|224589818|ref|NC_000006.11|:31,321,279-31,325,303				# Region for HLA-B
+
+	main();
+
+

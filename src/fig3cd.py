@@ -5,6 +5,7 @@ import os;
 import sys;
 import subprocess;
 import multiprocessing;
+import vcffilter;
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__));
 tools_path = '%s/../tools' % (SCRIPT_PATH);
@@ -13,20 +14,28 @@ SAMSCRIPTS = '%s/../tools/samscripts/src/' % (SCRIPT_PATH);
 sys.path.append('%s/../tools/samscripts/src/' % (SCRIPT_PATH));
 import fastqparser;
 
+BAMSURGEON_PATH = '%s/../tools/bamsurgeon' % (SCRIPT_PATH);
+
 
 
 def main():
-	setup_tools();
-	# RUN_CONSENSUS_TEST();
+	# setup_tools();
+	# RUN_CONSENSUS_TEST_ECOLIR73();
+	RUN_CONSENSUS_TEST_ECOLINMETH();
 	# RUN_MUTATED_REFERENCE_TEST();
 	# RUN_SV_TEST();
-	RUN_AMPLICON_TEST();
+	# RUN_AMPLICON_TEST();
 
 	# RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
 
-def RUN_CONSENSUS_TEST():
+def RUN_CONSENSUS_TEST_ECOLIR73():
 	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH), 'nanopore');
 	evaluate_alignments(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH));
+
+def RUN_CONSENSUS_TEST_ECOLINMETH():
+	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-nmeth/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH), 'nanopore');
+	evaluate_alignments(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-nmeth/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH));
+
 
 def RUN_MUTATED_REFERENCE_TEST():
 	run_all_mappers_only(('%s/../data/mutated-reference/mutated_ecoli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'mutecoli_ecoliR7.3', '%s/../data/out/mutecoli_ecoliR7.3_1/' % (SCRIPT_PATH), 'nanopore');
@@ -63,18 +72,36 @@ def RUN_AMPLICON_TEST():
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:29909854-29913805', 'HLA-A'],
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:31321279-31325303', 'HLA-B']];
 
-	dryrun = False;
-	# dryrun = True;
+	# dryrun = False;
+	dryrun = True;
 
 	# sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
 	sam_files = [
-#					'%s/marginAlign-nanopore.sam' % (out_path),
-					'%s/marginAlignGraphMap-nanopore.sam' % (out_path),
-					'%s/marginAlignGraphMap-anchor-nanopore.sam' % (out_path) ];
+					'%s/graphmap-params_20150525-all_reads-anchor.sam' % (out_path),
+					'%s/BWAMEM-20150524-all_reads.sam' % (out_path),
+					'%s/LAST-20150524-all_reads-addedqv.sam' % (out_path),
+					'%s/BLASR-20150524-all_reads.sam' % (out_path),
+					'%s/marginAlign-nanopore.sam' % (out_path),
+					'%s/marginAlignGraphMap-nanopore' % (out_path),
+					'%s/marginAlignGraphMap-anchor-nanopore' % (out_path)
+
+					# '%s/marginAlignGraphMap-nanopore.sam' % (out_path),
+					# '%s/marginAlignGraphMap-anchor-nanopore.sam' % (out_path)
+					];
+
+	fp_out = sys.stdout;
+	try:
+		fp_out = open('%s/collected_variants.csv' % out_path, 'w');
+	except:
+		sys.stderr.write('ERROR: Could not open file "%s" for writing! Outputting to STDOUT instead.\n');
+
+	fp_out.write('Mapper\tRegion\tTP\tFP\tTotal\tTruth\tTruth-PASS\tTruth-NonPASS\tFP-PASS\tFP-NonPASS\tFN-PASS\tFN-NonPASS\n');
+	empty_line = '\t'*12;
 
 	### Process all given SAM files.
 	for sam_path in sam_files:
-		sam_out_folder = '%s/inregion-%s/' % (out_path, os.path.basename(os.path.splitext(sam_path)[0]));
+		sam_basename = os.path.basename(os.path.splitext(sam_path)[0]);
+		sam_out_folder = '%s/inregion-%s/' % (out_path, sam_basename);
 		current_region = 0;
 		while (current_region < len(regions)):
 		# for region in regions:
@@ -82,31 +109,50 @@ def RUN_AMPLICON_TEST():
 			region_name = region[1];
 			sys.stderr.write('Running region %s:' % (region[1]));
 
+			reference_file_for_filtering = None;
 			region_to_use = region;
 			if ('marginalign' in os.path.basename(sam_path).lower()):
 				# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
 				region = regions_marginAlign[current_region];
+				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
+				reference_file_for_filtering = marginAlign_reference_file;
+
+			### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
+			[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=reference_file_for_filtering, leftalign=False);
+			sam_2d_reads_in_region = bam_2d_reads_in_region.replace('-sorted.bam', '.sam');
+			out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
+			sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 
 			if ('marginalign' in os.path.basename(sam_path).lower()):
-				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
-
-				### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
-				[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=marginAlign_reference_file, leftalign=False);
-
-				sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
-				sam_2d_reads_in_region = bam_2d_reads_in_region.replace('-sorted.bam', '.sam');
-				out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
+				# sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 				jobtree = 'jobTree';
 				if (os.path.exists(jobtree)):
 					execute_command('rm -r %s' % (jobtree));
-				execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
+				### Call variants using marginCaller.
+				# execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
 
-			else:
-				### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
-				[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
-				sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
+			### Evaluate the found variants.
+			vcf_known_mutations_path = '%s/../data/amplicons-f1000/truth_variants/sorted-variants-dbSNP_and_NA12878-%s_amplicon-splitsnps.vcf' % (SCRIPT_PATH, region[1]);
+			sam_2d_basename = os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0];
+			results = evaluate_vcf(sam_2d_basename, region[1], out_vcf, vcf_known_mutations_path);
+			fp_out.write('%s\t%s\t%s\n' % (sam_2d_basename, region_name, '\t'.join([str(value) for value in results])));
+			fp_out.flush();
 
 			current_region += 1;
+
+		fp_out.write(empty_line + '\n');
+
+	# # region = REGION_CYP2D6;
+	# for region in regions:
+	# 	vcf_known_mutations_path = '%s/../data/amplicons-f1000/truth_variants/sorted-variants-dbSNP_and_NA12878-%s_amplicon-splitsnps.vcf' % (SCRIPT_PATH, region[1]);
+	# 	sam_2d_basename = 'graphmap-params_20150525-all_reads-anchor-uniquebest-CYP2D6-evalue-1-2d-sorted';
+	# 	vcf_file = '%s/inregion/%s.vcf' % (out_path, sam_2d_basename);
+	# 	results = evaluate_vcf(sam_2d_basename, region[1], vcf_file, vcf_known_mutations_path);
+	# 	fp_out.write('%s\t%s\t%s\n' % (sam_2d_basename, region[1], '\t'.join([str(value) for value in results])));
+	# 	fp_out.flush();
+
+	if (fp_out != sys.stdout):
+		fp_out.close();
 
 
 
@@ -126,6 +172,16 @@ def execute_command_w_dryrun(dry_run, command):
 	sys.stderr.write('[Executing] "%s"\n' % command);
 	if (dry_run == False):
 		subprocess.call(command, shell=True);
+	sys.stderr.write('\n');
+
+def execute_command_with_ret(dry_run, command):
+	sys.stderr.write('Executing command: "%s"\n' % command);
+	if (dry_run == False):
+		p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE);
+	[output, err] = p.communicate()
+	rc = p.returncode
+	sys.stderr.write('\n');
+	return [rc, output, err];
 
 def measure_command_wrapper(out_filename):
 #	if (USE_BASICDEFINES_ == True):
@@ -451,6 +507,56 @@ def filter_spanning_reads(dry_run, region, reads_path, sam_in_path, sam_out_fold
 
 	return [bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region];
 
+def evaluate_vcf(mapper_name, region_name, vcf_file, vcf_known_mutations_path):
+	if (not os.path.exists(vcf_file)):
+		sys.stderr.write('ERROR: File "%s" does not exist! Continuing.\n' % (vcf_file));
+		return [0]*10;
+
+	# if (vcf_mutations_path.endswith('.gz') == False and os.path.exists(vcf_mutations_path + '.gz') == False):
+	execute_command_w_dryrun(False, 'bgzip -c %s > %s.gz' % (vcf_known_mutations_path, vcf_known_mutations_path));
+	execute_command_w_dryrun(False, 'tabix -f -p vcf %s.gz' % (vcf_known_mutations_path));
+	if (vcf_known_mutations_path.endswith('.gz') == False):
+		vcf_known_mutations_path_gz = vcf_known_mutations_path + '.gz';
+		# print vcf_mutations_path;
+	else:
+		sys.stderr.write('Truth variants not in .VCF format, but gzipped! Extract them and give some text files!\n');
+		exit(1);
+
+	execute_command_w_dryrun(False, 'bgzip -c %s > %s.gz' % (vcf_file, vcf_file));
+	execute_command_w_dryrun(False, 'tabix -f -p vcf %s.gz' % (vcf_file));
+	# execute_command('bamsurgeon/etc/evaluator.py -v %s.gz -t %s -m SNV' % (vcf_file, vcf_mutations_path));
+	fn_file = '%s-fn.vcf' % (os.path.splitext(vcf_file)[0]);
+	fp_file = '%s-fp.vcf' % (os.path.splitext(vcf_file)[0]);
+
+	command = '%s/etc/evaluator.py -v %s.gz -t %s -m SNV --fn %s --fp %s' % (BAMSURGEON_PATH, vcf_file, vcf_known_mutations_path_gz, fn_file, fp_file);
+	[rc, output, err] = execute_command_with_ret(False, command);
+
+	if (rc != 0):
+		sys.stderr.write(str(err));
+		exit(1);
+	lines = output.split('\n');
+
+	results = [0, 0, 0, 0];
+	if (len(lines) > 1 and len(lines[1]) > 0):
+		results = [int(value) for value in lines[1].split()];
+
+	sys.stderr.write('Truth pass counting:\n');
+	sys.stderr.write(vcf_known_mutations_path + '\n');
+	[num_pass_snps, num_nonpass_snps] = vcffilter.count_nonpass_variants(vcf_known_mutations_path, verbose=False);
+	results.append(num_pass_snps);
+	results.append(num_nonpass_snps);
+
+	sys.stderr.write('FP pass counting:\n');
+	[num_pass_snps, num_nonpass_snps] = vcffilter.count_nonpass_variants(fp_file, verbose=False);
+	results.append(num_pass_snps);
+	results.append(num_nonpass_snps);
+
+	sys.stderr.write('FN pass counting:\n');
+	[num_pass_snps, num_nonpass_snps] = vcffilter.count_nonpass_variants(fn_file, verbose=False);
+	results.append(num_pass_snps);
+	results.append(num_nonpass_snps);
+
+	return results;
 
 
 # cat ../data-in/mutated-reference/mutants.vcf | awk -F '\t' 'BEGIN {OFS = FS} {if ($0 == /^#.*/) print ; else {a=$4; $4=$5; $5=a; print } }' > ../data-in/mutated-reference/rev_mutants.vcf
