@@ -33,8 +33,8 @@ def RUN_CONSENSUS_TEST_ECOLIR73():
 	evaluate_alignments(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH));
 
 def RUN_CONSENSUS_TEST_ECOLINMETH():
-	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-nmeth/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH), 'nanopore');
-	evaluate_alignments(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-nmeth/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH));
+	run_all_mappers_only(('%s/../data/nmeth/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-nmeth/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH), 'nanopore');
+	evaluate_alignments(('%s/../data/nmeth/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-nmeth/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH));
 
 
 def RUN_MUTATED_REFERENCE_TEST():
