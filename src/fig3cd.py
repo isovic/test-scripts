@@ -1,5 +1,6 @@
 #! /usr/bin/python
 
+import re;
 import os;
 import sys;
 import subprocess;
@@ -7,7 +8,7 @@ import multiprocessing;
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__));
 tools_path = '%s/../tools' % (SCRIPT_PATH);
-SAMSCRIPTS = '%s/../tools/samscripts/src/';
+SAMSCRIPTS = '%s/../tools/samscripts/src/' % (SCRIPT_PATH);
 
 sys.path.append('%s/../tools/samscripts/src/' % (SCRIPT_PATH));
 import fastqparser;
@@ -58,18 +59,27 @@ def RUN_AMPLICON_TEST():
 	REGION_HLAB = ['gi|224589818|ref|NC_000006.11|:31321279-31325303', 'HLA-B'];
 
 	regions = [REGION_CYP2D6, REGION_HLAA, REGION_HLAB];
-	sam_out_folder = '%s/inregion/';
+	regions_marginAlign = [['gi_224589814_ref_NC_000022_10__Homo_sapiens_chromosome_22__GRCh37_p13_Primary_Assembly:42522077-42527144', 'CYP2D6'],
+							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:29909854-29913805', 'HLA-A'],
+							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:31321279-31325303', 'HLA-B']];
+
+	sam_out_folder = '%s/inregion/' % (out_path);
 	sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
-	for region in regions:
+	current_region = 0;
+	while (current_region < len(regions)):
+	# for region in regions:
+		region = regions[current_region];
 		region_name = region[1];
 		sys.stderr.write('Running region %s:' % (region[1]));
 
 		region_to_use = region;
 		if ('marginalign' in os.path.basename(sam_path).lower()):
-			region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
+			# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
+			region = regions_marginAlign[current_region];
 
 		### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
-		filter_spanning_reads(True, region_to_use, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
+		filter_spanning_reads(True, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
+		current_region += 1;
 
 
 
