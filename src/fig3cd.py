@@ -7,6 +7,7 @@ import multiprocessing;
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__));
 tools_path = '%s/../tools' % (SCRIPT_PATH);
+SAMSCRIPTS = '%s/../tools/samscripts/src/';
 
 sys.path.append('%s/../tools/samscripts/src/' % (SCRIPT_PATH));
 import fastqparser;
@@ -38,7 +39,9 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.0001, 'temp/mutated-refs/');
 
 def RUN_SV_TEST():
+	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
 	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fastq' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv-normal_ref/' % (SCRIPT_PATH), 'nanopore');
+	### Second, run the mappers on the modified reference.
 	run_all_mappers_only(('%s/../data/reference_for_sv/escherichia_coli-indel_events.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fastq' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv-indel_ref/' % (SCRIPT_PATH), 'nanopore');
 
 def RUN_AMPLICON_TEST():
@@ -46,24 +49,46 @@ def RUN_AMPLICON_TEST():
 	reads = '%s/../data/amplicons-f1000/reads/reads_2d-f1000.fastq' % (SCRIPT_PATH);
 	dataset_name = 'f1000amplicons';
 	out_path = '%s/../data/out/f1000amplicons/' % (SCRIPT_PATH);
-	run_all_mappers_only(reference, reads, 'nanopore', out_path, dataset_name, do_not_recalc=True, is_circular=False);
+	### Map all the amplicon reads to the chr6 and chr22 references.
+	# run_all_mappers_only(reference, reads, 'nanopore', out_path, dataset_name, do_not_recalc=True, is_circular=False);
 
+	REGION_CYP2D6 = ['gi|224589814|ref|NC_000022.10|:42522077-42527144', 'CYP2D6'];
+	REGION_HLAA = ['gi|224589818|ref|NC_000006.11|:29909854-29913805', 'HLA-A'];
+	REGION_HLAB = ['gi|224589818|ref|NC_000006.11|:31321279-31325303', 'HLA-B'];
+
+	regions = [REGION_CYP2D6, REGION_HLAA, REGION_HLAB];
+	sam_out_folder = '%s/inregion/';
+	sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
+	for region in regions:
+		region_name = region[1];
+		sys.stderr.write('Running region %s:' % (region[1]));
+
+		region_to_use = region;
+		if ('marginalign' in os.path.basename(sam_path).lower()):
+			region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
+
+		### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
+		filter_spanning_reads(True, region_to_use, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
 
 
 
 
 def execute_command(command):
-	sys.stderr.write('[Executing] %s\n' % (command));
+	sys.stderr.write('[Executing] "%s"\n' % (command));
 	subprocess.call(command, shell=True);
 	sys.stderr.write('\n');
 
 def execute_command_get_stdout(command):
-	sys.stderr.write('[Executing] %s\n' % (command));
+	sys.stderr.write('[Executing] "%s"\n' % (command));
 	p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
 	[out, err] = p.communicate()
 	sys.stderr.write('\n');
-
 	return [out, err];
+
+def execute_command_w_dryrun(dry_run, command):
+	sys.stderr.write('[Executing] "%s"\n' % command);
+	if (dry_run == False):
+		subprocess.call(command, shell=True);
 
 def measure_command_wrapper(out_filename):
 #	if (USE_BASICDEFINES_ == True):
@@ -221,7 +246,7 @@ def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, mac
 
 	out_sam = '%s/marginAlignGraphMap-anchor-%s.sam' % (out_path, dataset_name);
 	if (not os.path.exists(out_sam)):
-		execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s anchor %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, 'anchor-' + dataset_name));
+		execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s anchor %s %s' % (tools_path, orig_reads, orig_reference, out_path, 'anchor-' + dataset_name));
 	else:
 		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
@@ -269,6 +294,117 @@ def generate_mutated_reference(reference_path, snp_rate, out_path):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#######################
+### These are additional functions for the amplicon test (filtering and such stuff).
+#######################
+def filter_spanning_reads(dry_run, region, reads_path, sam_in_path, sam_out_folder, reference_path=None, leftalign=False):
+	if not os.path.exists(sam_out_folder):
+		sys.stderr.write('Creating folder "%s".\n' % (sam_out_folder));
+		os.makedirs(sam_out_folder);
+
+	# if (('last' in os.path.basename(sam_in_path).lower()) or ('marginalign' in os.path.basename(sam_in_path).lower())):
+	# 	sys.stderr.write('[0] Adding quality values to alignments...\n');
+	# 	execute_command_w_dryrun(dry_run, '%s/samfilter.py addqv %s %s %s-addedqv.sam' % (SAMSCRIPTS, sam_in_path, reads_path, os.path.splitext(sam_in_path)[0]));
+	# 	sys.stderr.write('\n');
+	# 	sam_in_path = '%s-addedqv.sam' % (os.path.splitext(sam_in_path)[0]);
+
+#	# temp_sam_region = '%s/%s-%s.sam' % (sam_out_folder, os.path.basename(os.path.splitext(sam_in_path)[0]), region[1]);
+#	# temp_region_uniquebest = '%s/%s-uniquebest.sam' % (sam_out_folder, os.path.basename(os.path.splitext(temp_sam_region)[0]));
+#	# temp_region_uniquebest_evalue = '%s/%s-evalue-1.sam' % (sam_out_folder, os.path.basename(os.path.splitext(temp_uniquebest_region)[0]));
+#	# temp_before_2d = temp_uniquebest_region;
+
+	temp_sam_uniquebest = '%s/%s-uniquebest.sam' % (sam_out_folder, os.path.basename(os.path.splitext(sam_in_path)[0]));
+	temp_uniquebest_region = '%s/%s-%s.sam' % (sam_out_folder, os.path.basename(os.path.splitext(temp_sam_uniquebest)[0]), region[1]);
+	temp_region_uniquebest_evalue = '%s/%s-evalue-1.sam' % (sam_out_folder, os.path.basename(os.path.splitext(temp_uniquebest_region)[0]));
+	temp_before_2d = temp_uniquebest_region;
+
+	### Extract only unique reads.
+	sys.stderr.write('[1] Extracting only the unique reads with the best score "%s"...\n' % (temp_sam_uniquebest));
+	execute_command_w_dryrun(dry_run, '%s/samfilter.py uniquebest %s %s' % (SAMSCRIPTS, sam_in_path, temp_sam_uniquebest));
+	sys.stderr.write('\n');
+
+	### Extract only the reads which fully cover the region:
+	sys.stderr.write('[2] Extracting only reads that fully span region "%s" to file "%s"...\n' % (region[0], temp_uniquebest_region));
+	execute_command_w_dryrun(dry_run, '%s/samfilter.py regionfull "%s" %s %s' % (SAMSCRIPTS, region[0], temp_sam_uniquebest, temp_uniquebest_region));
+	# execute_command_w_dryrun('%s/samfilter.py regionpartial "%s" %s %s' % (SAMSCRIPTS, region[0], temp_sam_uniquebest, temp_uniquebest_region));
+	sys.stderr.write('\n');
+
+	if ('graphmap' in os.path.basename(sam_in_path).lower()):
+		sys.stderr.write('[2.1] Filtering by E-value (GraphMap specific) to file "%s"...\n' % (temp_region_uniquebest_evalue));
+		execute_command_w_dryrun(dry_run, '%s/samfilter.py evalue 1 %s %s' % (SAMSCRIPTS, temp_uniquebest_region, temp_region_uniquebest_evalue));
+		sys.stderr.write('\n');
+		temp_before_2d = temp_region_uniquebest_evalue;
+
+	temp_1d = '%s/%s-1d.sam' % (sam_out_folder, os.path.basename(os.path.splitext(temp_before_2d)[0]));
+	sys.stderr.write('[3] Extracting only the 1d reads to file "%s"...\n' % (temp_1d));
+	execute_command_w_dryrun(dry_run, '%s/samfilter.py 1d %s %s' % (SAMSCRIPTS, temp_before_2d, temp_1d));
+	sys.stderr.write('\n');
+
+	temp_2d = '%s/%s-2d.sam' % (sam_out_folder, os.path.basename(os.path.splitext(temp_before_2d)[0]));
+	sys.stderr.write('[4] Extracting only the 2d reads to file "%s"...\n' % (temp_2d));
+	execute_command_w_dryrun(dry_run, '%s/samfilter.py 2d %s %s' % (SAMSCRIPTS, temp_before_2d, temp_2d));
+	sys.stderr.write('\n');
+
+	### Convert the SAM file to BAM format:
+	sys.stderr.write('[5.1] Converting all aligned reads in the region to BAM format from file "%s"...' % (temp_before_2d));
+	execute_command_w_dryrun(dry_run, '%s/convert_to_bam.sh %s' % (SAMSCRIPTS, os.path.splitext(temp_before_2d)[0]));
+	bam_all = '%s-sorted.bam' % os.path.splitext(temp_before_2d)[0];
+	sys.stderr.write('\n');
+	sys.stderr.write('[5.2] Converting the 1d aligned reads to BAM format from file "%s"...' % (temp_1d));
+	execute_command_w_dryrun(dry_run, '%s/convert_to_bam.sh %s' % (SAMSCRIPTS, os.path.splitext(temp_1d)[0]));
+	bam_1d = '%s-sorted.bam' % os.path.splitext(temp_1d)[0];
+	sys.stderr.write('\n');
+	sys.stderr.write('[5.3] Converting the 2d aligned reads to BAM format from file "%s"...' % (temp_2d));
+	execute_command_w_dryrun(dry_run, '%s/convert_to_bam.sh %s' % (SAMSCRIPTS, os.path.splitext(temp_2d)[0]));
+	bam_2d = '%s-sorted.bam' % os.path.splitext(temp_2d)[0];
+	sys.stderr.write('\n');
+
+	bam_all_reads_in_region = bam_all;
+	bam_1d_reads_in_region = bam_1d
+	bam_2d_reads_in_region = bam_2d
+
+	if (leftalign == True):
+		if (reference_path == None):
+			sys.stderr.write('ERROR: Reference not specified, cannot leftalign the BAM file.\n');
+		else:
+			sys.stderr.write('[6.1] Left aligning all aligned reads in the region from file "%s"...' % (bam_all));
+			bam_all_leftaligned = '%s-leftaligned.bam' % (os.path.splitext(bam_all)[0]);
+			execute_command_w_dryrun(dry_run, 'cat %s | %s/bamleftalign -f %s > %s' % (bam_all, TOOLS_PATH, reference_path, bam_all_leftaligned));
+			execute_command_w_dryrun(dry_run, 'samtools index %s' % (bam_all_leftaligned));
+			sys.stderr.write('\n');
+
+			sys.stderr.write('[6.2] Left aligning all aligned reads in the region from file "%s"...' % (bam_1d));
+			bam_1d_leftaligned = '%s-leftaligned.bam' % (os.path.splitext(bam_1d)[0]);
+			execute_command_w_dryrun(dry_run, 'cat %s | %s/bamleftalign -f %s > %s' % (bam_1d, TOOLS_PATH, reference_path, bam_1d_leftaligned));
+			execute_command_w_dryrun(dry_run, 'samtools index %s' % (bam_1d_leftaligned));
+			sys.stderr.write('\n');
+
+			sys.stderr.write('[6.3] Left aligning all aligned reads in the region from file "%s"...' % (bam_2d));
+			bam_2d_leftaligned = '%s-leftaligned.bam' % (os.path.splitext(bam_2d)[0]);
+			execute_command_w_dryrun(dry_run, 'cat %s | %s/bamleftalign -f %s > %s' % (bam_2d, TOOLS_PATH, reference_path, bam_2d_leftaligned));
+			execute_command_w_dryrun(dry_run, 'samtools index %s' % (bam_2d_leftaligned));
+			sys.stderr.write('\n');
+
+			bam_all_reads_in_region = bam_all_leftaligned;
+			bam_1d_reads_in_region = bam_1d_leftaligned
+			bam_2d_reads_in_region = bam_2d_leftaligned
+
+	return [bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region];
 
 
 
