@@ -87,19 +87,24 @@ def RUN_AMPLICON_TEST():
 				# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
 				region = regions_marginAlign[current_region];
 
-			### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
-			[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
-			sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
-
 			if ('marginalign' in os.path.basename(sam_path).lower()):
-				# sam_2d_reads_in_region = '%s.sam' % (os.path.splitext(bam_2d_reads_in_region)[0]);
-				sam_2d_reads_in_region = bam_2d_reads_in_region.replace('-sorted.bam', '.sam');
 				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
+
+				### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
+				[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=marginAlign_reference_file, leftalign=False);
+
+				sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
+				sam_2d_reads_in_region = bam_2d_reads_in_region.replace('-sorted.bam', '.sam');
 				out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
 				jobtree = 'jobTree';
 				if (os.path.exists(jobtree)):
 					execute_command('rm -r %s' % (jobtree));
 				execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
+				
+			else:
+				### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
+				[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
+				sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 
 			current_region += 1;
 
