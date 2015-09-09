@@ -78,7 +78,8 @@ def RUN_AMPLICON_TEST():
 			region = regions_marginAlign[current_region];
 
 		### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
-		filter_spanning_reads(True, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
+		[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(True, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
+		sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region]));)
 		current_region += 1;
 
 
