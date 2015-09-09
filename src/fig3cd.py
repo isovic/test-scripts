@@ -37,6 +37,7 @@ def RUN_MUTATED_REFERENCE_TEST():
 
 def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.0001, 'temp/mutated-refs/');
+	pass;
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
@@ -47,8 +48,8 @@ def RUN_SV_TEST():
 def RUN_AMPLICON_TEST():
 	reference = '%s/../data/amplicons-f1000/reference/ref_chr6_chr22-hg19_v38.fa' % (SCRIPT_PATH);
 	reads = '%s/../data/amplicons-f1000/reads/reads_2d-f1000.fastq' % (SCRIPT_PATH);
-	dataset_name = 'f1000amplicons';
-	out_path = '%s/../data/out/f1000amplicons/' % (SCRIPT_PATH);
+	dataset_name = 'f1000amplicons_2d';
+	out_path = '%s/../data/out/f1000amplicons_2d/' % (SCRIPT_PATH);
 	### Map all the amplicon reads to the chr6 and chr22 references.
 	# run_all_mappers_only(reference, reads, 'nanopore', out_path, dataset_name, do_not_recalc=True, is_circular=False);
 
@@ -114,7 +115,7 @@ def setup_tools():
 
 	if (not os.path.exists('%s/../tools/mutatrix/' % (SCRIPT_PATH))):
 		execute_command('cd %s/../packs; tar -xvf mutatrix.tar.gz' % (SCRIPT_PATH));
-		execute_command('mv packs/mutatrix tools/mutatrix' % (SCRIPT_PATH));
+		execute_command('mv packs/mutatrix tools/' % (SCRIPT_PATH));
 
 
 
