@@ -66,7 +66,6 @@ def RUN_AMPLICON_TEST():
 	dryrun = False;
 	# dryrun = True;
 
-	sam_out_folder = '%s/inregion/' % (out_path);
 	# sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
 	sam_files = [
 #					'%s/marginAlign-nanopore.sam' % (out_path),
@@ -75,6 +74,7 @@ def RUN_AMPLICON_TEST():
 
 	### Process all given SAM files.
 	for sam_path in sam_files:
+		sam_out_folder = '%s/inregion-%s/' % (out_path, os.path.basename(os.path.splitext(sam_path)[0]));
 		current_region = 0;
 		while (current_region < len(regions)):
 		# for region in regions:
@@ -100,7 +100,7 @@ def RUN_AMPLICON_TEST():
 				if (os.path.exists(jobtree)):
 					execute_command('rm -r %s' % (jobtree));
 				execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
-				
+
 			else:
 				### First prepare the alignments for variant calling. This includes filtering the uniquely aligned reads, taking only 2d reads, and taking only reads that fully span the region.
 				[bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region] = filter_spanning_reads(dryrun, region, reads, sam_path, sam_out_folder, reference_path=None, leftalign=False);
