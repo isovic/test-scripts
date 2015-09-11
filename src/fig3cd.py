@@ -35,7 +35,7 @@ def RUN_CONSENSUS_TEST_ECOLIR73():
 def RUN_CONSENSUS_TEST_ECOLINMETH():
 	run_all_mappers_only(('%s/../data/nmeth/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH), 'nanopore');
 	evaluate_alignments(('%s/../data/nmeth/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH));
-
+	collect_alignments(('%s/../data/nmeth/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH), 'nmeth-all_2d', '%s/../data/out/consensus-nmeth-all_2d/' % (SCRIPT_PATH));
 
 def RUN_MUTATED_REFERENCE_TEST():
 	run_all_mappers_only(('%s/../data/mutated-reference/mutated_ecoli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'mutecoli_ecoliR7.3', '%s/../data/out/mutecoli_ecoliR7.3_1/' % (SCRIPT_PATH), 'nanopore');
@@ -61,6 +61,14 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 		do_not_recalc=True,
 		is_circular=True,
 		select_mappers=['graphmap', 'graphmap-anchor', 'last']);
+	evaluate_alignments(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
+						('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
+						'mutated_ref_draftlike_ecoliR7.3',
+						'%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH));
+	collect_alignments(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
+						('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
+						'mutated_ref_draftlike_ecoliR7.3',
+						'%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH));
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
