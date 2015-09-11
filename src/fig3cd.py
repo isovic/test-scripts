@@ -82,7 +82,7 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 						'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
 
 def RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS():
-	run_all_mappers_only(('%s/../data/assemblies/reference/circular_draft.fasta' % SCRIPT_PATH),
+	run_all_mappers_only(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
 						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
 						'asm_draft_ecolinmeth',
 						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH),
@@ -92,12 +92,12 @@ def RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS():
 						select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
 						# select_mappers=['graphmap', 'graphmap-anchor', 'last']);
 
-	evaluate_alignments(('%s/../data/assemblies/reference/circular_draft.fasta' % SCRIPT_PATH),
+	evaluate_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
 						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
 						'asm_draft_ecolinmeth',
 						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
 
-	collect_alignments(('%s/../data/assemblies/reference/circular_draft.fasta' % SCRIPT_PATH),
+	collect_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
 						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
 						'asm_draft_ecolinmeth',
 						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
@@ -340,13 +340,6 @@ def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, mac
 	# dataset_name = os.path.splitext(os.path.basename(orig_reads))[0];
 	sys.stderr.write('Dataset name: "%s".\n' % (dataset_name));
 
-	if ('daligner' in select_mappers):
-		out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
-		if (not os.path.exists(out_sam)):
-			execute_command('%s/aligneval/wrappers/wrapper_daligner.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-		else:
-			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
-
 	if ('graphmap' in select_mappers):
 		out_sam = '%s/GraphMap-%s.sam' % (out_path, dataset_name);
 		if ((not os.path.exists(out_sam))):
@@ -379,6 +372,13 @@ def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, mac
 		out_sam = '%s/BLASR-%s.sam' % (out_path, dataset_name);
 		if (not os.path.exists(out_sam)):
 			execute_command('%s/aligneval/wrappers/wrapper_blasr.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+
+	if ('daligner' in select_mappers):
+		out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
+		if (not os.path.exists(out_sam)):
+			execute_command('%s/aligneval/wrappers/wrapper_daligner.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
 		else:
 			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
