@@ -54,21 +54,30 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 	### This mutates the reference to include similar number of SNPs and indels as Loman/Simpson nanopore-only assembly pipeline (~1200 SNPs and ~17000 indels).
 	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.00019, 0.0027, 'data/mutated-refs/finallike');
 	run_all_mappers_only(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
-		('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
-		'mutated_ref_draftlike_ecoliR7.3',
-		'%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH),
-		'nanopore',
-		do_not_recalc=True,
-		is_circular=True,
-		select_mappers=['graphmap', 'graphmap-anchor', 'last']);
+						# ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
+						# 'mutated_ref_draftlike_ecoliR7.3',
+						# '%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH),
+						('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+						'mutated_ref_draftlike_ecolinmeth',
+						'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH),
+						'nanopore',
+						do_not_recalc=True,
+						is_circular=True,
+						select_mappers=['graphmap', 'graphmap-anchor', 'last']);
 	evaluate_alignments(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
-						('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
-						'mutated_ref_draftlike_ecoliR7.3',
-						'%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH));
+						# ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
+						# 'mutated_ref_draftlike_ecoliR7.3',
+						# '%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH),
+						('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+						'mutated_ref_draftlike_ecolinmeth',
+						'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
 	collect_alignments(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
-						('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
-						'mutated_ref_draftlike_ecoliR7.3',
-						'%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH));
+						# ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
+						# 'mutated_ref_draftlike_ecoliR7.3',
+						# '%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH),
+						('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+						'mutated_ref_draftlike_ecolinmeth',
+						'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
