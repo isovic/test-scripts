@@ -14,6 +14,8 @@ data/out/
 data/hmm/
 data/backup/
 data/amplicons-f1000/
+data/nmeth/
+data/in/
 tools/
 temp/
 jobTree/

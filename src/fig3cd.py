@@ -21,12 +21,12 @@ BAMSURGEON_PATH = '%s/../tools/bamsurgeon' % (SCRIPT_PATH);
 def main():
 	# setup_tools();
 	# RUN_CONSENSUS_TEST_ECOLIR73();
-	RUN_CONSENSUS_TEST_ECOLINMETH();
+	# RUN_CONSENSUS_TEST_ECOLINMETH();
 	# RUN_MUTATED_REFERENCE_TEST();
 	# RUN_SV_TEST();
 	# RUN_AMPLICON_TEST();
 
-	# RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
+	RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
 
 def RUN_CONSENSUS_TEST_ECOLIR73():
 	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH), 'nanopore');
@@ -46,8 +46,21 @@ def RUN_MUTATED_REFERENCE_TEST():
 	evaluate_alignments(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'mutecoli_ecoliR7.3', '%s/../data/out/mutecoli_ecoliR7.3_on_original_ref' % (SCRIPT_PATH));
 
 def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
-	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.0001, 'temp/mutated-refs/');
-	pass;
+	### This generates a mutated reference with only SNPs. Roughly ~650 variants introduced.
+	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.0001, 0, 'temp/mutated-refs/');
+
+	### This mutates the reference to include similar number of SNPs and indels as Loman/Simpson nanopore-only assembly pipeline (~3750 SNPs and ~42500 indels).
+	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.0006, 0.0067, 'data/mutated-refs/draftlike');
+	### This mutates the reference to include similar number of SNPs and indels as Loman/Simpson nanopore-only assembly pipeline (~1200 SNPs and ~17000 indels).
+	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.00019, 0.0027, 'data/mutated-refs/finallike');
+	run_all_mappers_only(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
+		('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
+		'mutated_ref_draftlike_ecoliR7.3',
+		'%s/../data/out/mutated_ref_draftlike_ecoliR7.3/' % (SCRIPT_PATH),
+		'nanopore',
+		do_not_recalc=True,
+		is_circular=True,
+		select_mappers=['graphmap', 'graphmap-anchor', 'last']);
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
@@ -276,7 +289,7 @@ def collect_alignments(reference, reads, dataset_name, out_path):
 ###		orig_reads is the file containing the reads to map to.
 ###		dataset_name is the name that will be added to the suffix of the output SAM file.
 ###		out_path is the path to the folder
-def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, machine_name, do_not_recalc=True, is_circular=True):
+def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, machine_name, do_not_recalc=True, is_circular=True, select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']):
 	if (not os.path.exists(out_path)):
 		sys.stderr.write('Creating output path: "%s".\n' % out_path);
 		execute_command('mkdir -p %s' % out_path);
@@ -287,61 +300,70 @@ def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, mac
 	# dataset_name = os.path.splitext(os.path.basename(orig_reads))[0];
 	sys.stderr.write('Dataset name: "%s".\n' % (dataset_name));
 
-	out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
-		execute_command('%s/aligneval/wrappers/wrapper_daligner.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('daligner' in select_mappers):
+		out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
+		if (not os.path.exists(out_sam)):
+			execute_command('%s/aligneval/wrappers/wrapper_daligner.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	out_sam = '%s/GraphMap-%s.sam' % (out_path, dataset_name);
-	if ((not os.path.exists(out_sam))):
-		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s nanopore%s %s %s' % (tools_path, orig_reads, orig_reference, ('circ' if (is_circular == True) else ''), out_path, dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('graphmap' in select_mappers):
+		out_sam = '%s/GraphMap-%s.sam' % (out_path, dataset_name);
+		if ((not os.path.exists(out_sam))):
+			execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s nanopore%s %s %s' % (tools_path, orig_reads, orig_reference, ('circ' if (is_circular == True) else ''), out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	out_sam = '%s/GraphMap-anchor-%s.sam' % (out_path, dataset_name);
-	if (not (os.path.exists(out_sam))):
-		execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s anchor%s %s anchor-%s' % (tools_path, orig_reads, orig_reference, ('circ' if (is_circular == True) else ''), out_path, dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('graphmap-anchor' in select_mappers):
+		out_sam = '%s/GraphMap-anchor-%s.sam' % (out_path, dataset_name);
+		if (not (os.path.exists(out_sam))):
+			execute_command('%s/aligneval/wrappers/wrapper_graphmap.py run %s %s anchor%s %s anchor-%s' % (tools_path, orig_reads, orig_reference, ('circ' if (is_circular == True) else ''), out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
-		execute_command('%s/aligneval/wrappers/wrapper_lastal.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('last' in select_mappers):
+		out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
+		if (not os.path.exists(out_sam)):
+			execute_command('%s/aligneval/wrappers/wrapper_lastal.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	out_sam = '%s/BWAMEM-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
-		execute_command('%s/aligneval/wrappers/wrapper_bwamem.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('bwamem' in select_mappers):
+		out_sam = '%s/BWAMEM-%s.sam' % (out_path, dataset_name);
+		if (not os.path.exists(out_sam)):
+			execute_command('%s/aligneval/wrappers/wrapper_bwamem.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	out_sam = '%s/BLASR-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
-		execute_command('%s/aligneval/wrappers/wrapper_blasr.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('blasr' in select_mappers):
+		out_sam = '%s/BLASR-%s.sam' % (out_path, dataset_name);
+		if (not os.path.exists(out_sam)):
+			execute_command('%s/aligneval/wrappers/wrapper_blasr.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
 
 
-	out_sam = '%s/marginAlign-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
-		execute_command('%s/aligneval/wrappers/wrapper_marginalign.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('marginalign' in select_mappers):
+		out_sam = '%s/marginAlign-%s.sam' % (out_path, dataset_name);
+		if (not os.path.exists(out_sam)):
+			execute_command('%s/aligneval/wrappers/wrapper_marginalign.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	out_sam = '%s/marginAlignGraphMap-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
-		execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('marginaligngraphmap' in select_mappers):
+		out_sam = '%s/marginAlignGraphMap-%s.sam' % (out_path, dataset_name);
+		if (not os.path.exists(out_sam)):
+			execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s %s %s %s' % (tools_path, orig_reads, orig_reference, machine_name, out_path, dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
-	out_sam = '%s/marginAlignGraphMap-anchor-%s.sam' % (out_path, dataset_name);
-	if (not os.path.exists(out_sam)):
-		execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s anchor %s %s' % (tools_path, orig_reads, orig_reference, out_path, 'anchor-' + dataset_name));
-	else:
-		sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
+	if ('marginaligngraphmap-anchor' in select_mappers):
+		out_sam = '%s/marginAlignGraphMap-anchor-%s.sam' % (out_path, dataset_name);
+		if (not os.path.exists(out_sam)):
+			execute_command('%s/aligneval/wrappers/wrapper_marginaligngraphmap.py run %s %s anchor %s %s' % (tools_path, orig_reads, orig_reference, out_path, 'anchor-' + dataset_name));
+		else:
+			sys.stderr.write('Warning: File "%s" already exists. Please use another name. Skipping.\n' % (out_sam));
 
 
 
@@ -349,20 +371,23 @@ def run_all_mappers_only(orig_reference, orig_reads, dataset_name, out_path, mac
 
 
 ### Mutates the given reference, and writes the mutations in a vcf file.
-def generate_mutated_reference(reference_path, snp_rate, out_path):
+def generate_mutated_reference(reference_path, snp_rate, indel_rate, out_path):
 	reference_path = os.path.abspath(reference_path);
 	out_path = os.path.abspath(out_path);
 	if (not os.path.exists(out_path)):
 		os.makedirs(out_path);
 
-	out_prefix = '%s/mutated_%s_%f' % (out_path, os.path.splitext(os.path.basename(reference_path))[0], snp_rate);
+	out_prefix = '%s/mutated_%s_snp%f_indel%f' % (out_path, os.path.splitext(os.path.basename(reference_path))[0], snp_rate, indel_rate);
 	out_vcf = os.path.abspath('%s.vcf' % (out_prefix));
 	out_rev_vcf = '%s/rev_%s.vcf' % (out_path, os.path.basename(out_prefix));
 	ref_ext = os.path.splitext(reference_path)[-1];
 	out_ref_file = '%s%s' % (out_prefix, ref_ext);
 
 	sys.stderr.write('Mutating the reference using Mutatrix, output VCF file: "%s".\n' % (out_vcf));
-	execute_command('cd %s; %s/mutatrix/mutatrix --snp-rate %f --population-size 1 --microsat-min-len 0 --mnp-ratio 0 --indel-rate 0 --indel-max 0 %s > %s' % (out_path, tools_path, snp_rate, reference_path, out_vcf));
+	if (indel_rate != 0):
+		execute_command('cd %s; %s/mutatrix/mutatrix --snp-rate %f --population-size 1 --microsat-min-len 0 --mnp-ratio 0 --indel-rate %f --indel-max 10 %s > %s' % (out_path, tools_path, snp_rate, indel_rate, reference_path, out_vcf));
+	else:
+		execute_command('cd %s; %s/mutatrix/mutatrix --snp-rate %f --population-size 1 --microsat-min-len 0 --mnp-ratio 0 --indel-rate 0 --indel-max 0 %s > %s' % (out_path, tools_path, snp_rate, reference_path, out_vcf));
 
 	sys.stderr.write('Reversing the SNP bases in the VCF file, output VCF file: "%s".\n' % (out_rev_vcf));
 	execute_command(r"cat %s | awk -F '\t' 'BEGIN {OFS = FS} {if ($0 == /^#.*/) print ; else {a=$4; $4=$5; $5=a; print } }' > %s" % (out_vcf, out_rev_vcf));
