@@ -26,6 +26,7 @@ def main():
 	# RUN_SV_TEST();
 	# RUN_AMPLICON_TEST();
 
+	RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS();
 	RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
 
 def RUN_CONSENSUS_TEST_ECOLIR73():
@@ -63,7 +64,8 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 						'nanopore',
 						do_not_recalc=True,
 						is_circular=True,
-						select_mappers=['graphmap', 'graphmap-anchor', 'last']);
+						select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
+						# select_mappers=['graphmap', 'graphmap-anchor', 'last']);
 	evaluate_alignments(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
 						# ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
 						# 'mutated_ref_draftlike_ecoliR7.3',
@@ -78,6 +80,27 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 						('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
 						'mutated_ref_draftlike_ecolinmeth',
 						'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
+
+def RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS():
+	run_all_mappers_only(('%s/../data/assemblies/reference/circular_draft.fasta' % SCRIPT_PATH),
+						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+						'asm_draft_ecolinmeth',
+						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH),
+						'nanopore',
+						do_not_recalc=True,
+						is_circular=True,
+						select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
+						# select_mappers=['graphmap', 'graphmap-anchor', 'last']);
+
+	evaluate_alignments(('%s/../data/assemblies/reference/circular_draft.fasta' % SCRIPT_PATH),
+						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+						'asm_draft_ecolinmeth',
+						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
+
+	collect_alignments(('%s/../data/assemblies/reference/circular_draft.fasta' % SCRIPT_PATH),
+						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+						'asm_draft_ecolinmeth',
+						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
