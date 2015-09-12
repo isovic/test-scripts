@@ -309,21 +309,21 @@ def evaluate_alignments(reference, reads, dataset_name, out_path):
 ### Filters only one unique (best) alignment for each read, and then evaluates the results.
 def evaluate_unique_alignments(reference, reads, dataset_name, out_path):
 	out_collect_file = '%s/collected.csv' % (out_path);
-	
-	out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
-	out_sam_uniquebest = '%s/LAST-%s-uniquebest.sam' % (out_path, dataset_name);
-	execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam, out_sam_uniquebest));
-	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam_uniquebest, reference, reads, out_collect_file));
 
-	out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
-	out_sam_uniquebest = '%s/DALIGNER-%s-uniquebest.sam' % (out_path, dataset_name);
-	execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam, out_sam_uniquebest));
-	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam_uniquebest, reference, reads, out_collect_file));
+	# out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
+	# out_sam_uniquebest = '%s/LAST-%s-uniquebest.sam' % (out_path, dataset_name);
+	# execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam, out_sam_uniquebest));
+	# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam_uniquebest, reference, reads, out_collect_file));
+
+	# out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
+	# out_sam_uniquebest = '%s/DALIGNER-%s-uniquebest.sam' % (out_path, dataset_name);
+	# execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam, out_sam_uniquebest));
+	# execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam_uniquebest, reference, reads, out_collect_file));
 
 	out_sam = '%s/marginAlign-%s.sam' % (out_path, dataset_name);
 	out_sam_with_AS = '%s/marginAlign-%s-with_AS.sam' % (out_path, dataset_name);
 	out_sam_uniquebest = '%s/marginAlign-%s-with_AS-uniquebest.sam' % (out_path, dataset_name);
-	execute_command('%s/samscripts/src/samfilter.py generateAS %s %s' % (tools_path, out_sam, out_sam_with_AS));
+	execute_command('%s/samscripts/src/samfilter.py generateAS %s %s %s' % (tools_path, reference, out_sam, out_sam_with_AS));
 	execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam_with_AS, out_sam_uniquebest));
 	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam_uniquebest, reference, reads, out_collect_file));
 
