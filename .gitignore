@@ -16,6 +16,8 @@ data/backup/
 data/amplicons-f1000/
 data/nmeth/
 data/in/
+data/assemblies/
+data/mutated-refs/
 tools/
 temp/
 jobTree/

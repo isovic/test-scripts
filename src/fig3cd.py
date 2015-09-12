@@ -27,7 +27,7 @@ def main():
 	# RUN_AMPLICON_TEST();
 
 	RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS();
-	RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
+	# RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
 
 def RUN_CONSENSUS_TEST_ECOLIR73():
 	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH), 'nanopore');
@@ -82,25 +82,37 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 						'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
 
 def RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS():
-	run_all_mappers_only(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-						'asm_draft_ecolinmeth',
-						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH),
-						'nanopore',
-						do_not_recalc=True,
-						is_circular=True,
-						select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
-						# select_mappers=['graphmap', 'graphmap-anchor', 'last']);
+	# run_all_mappers_only(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
+	# 					('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+	# 					'asm_draft_ecolinmeth',
+	# 					'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH),
+	# 					'nanopore',
+	# 					do_not_recalc=True,
+	# 					is_circular=True,
+	# 					select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
 
-	evaluate_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-						'asm_draft_ecolinmeth',
-						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
+	# evaluate_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
+	# 					('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+	# 					'asm_draft_ecolinmeth',
+	# 					'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
 
-	collect_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-						('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-						'asm_draft_ecolinmeth',
-						'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
+	# collect_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
+	# 					('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+	# 					'asm_draft_ecolinmeth',
+	# 					'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
+	# evaluate_consensus_sequences(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH),
+	# 							('%s/../data/assemblies/reference/wrapped_rev_circular_draft.fasta' % SCRIPT_PATH),
+	# 							'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH),
+	# 							'asm_draft_ecolinmeth');
+
+	evaluate_unique_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
+								('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+								'asm_draft_ecolinmeth',
+								'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
+	collect_unique_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
+								('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+								'asm_draft_ecolinmeth',
+								'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
@@ -294,6 +306,25 @@ def evaluate_alignments(reference, reads, dataset_name, out_path):
 	out_sam = '%s/marginAlignGraphMap-anchor-%s.sam' % (out_path, dataset_name);
 	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
+### Filters only one unique (best) alignment for each read, and then evaluates the results.
+def evaluate_unique_alignments(reference, reads, dataset_name, out_path):
+	out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
+	out_sam_uniquebest = '%s/LAST-%s-uniquebest.sam' % (out_path, dataset_name);
+	execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam, out_sam_uniquebest));
+	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam_uniquebest, reference, reads, out_collect_file));
+
+	out_sam = '%s/DALIGNER-%s.sam' % (out_path, dataset_name);
+	out_sam_uniquebest = '%s/DALIGNER-%s-uniquebest.sam' % (out_path, dataset_name);
+	execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam, out_sam_uniquebest));
+	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam_uniquebest, reference, reads, out_collect_file));
+
+	out_sam = '%s/marginAlign-%s.sam' % (out_path, dataset_name);
+	out_sam_with_AS = '%s/marginAlign-%s-with_AS.sam' % (out_path, dataset_name);
+	out_sam_uniquebest = '%s/marginAlign-%s-with_AS-uniquebest.sam' % (out_path, dataset_name);
+	execute_command('%s/samscripts/src/samfilter.py generateAS %s %s' % (tools_path, out_sam, out_sam_with_AS));
+	execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam_with_AS, out_sam_uniquebest));
+	execute_command('%s/samscripts/src/alignmentstats.py file calc %s %s %s 20 >> %s' % (tools_path, out_sam_uniquebest, reference, reads, out_collect_file));
+
 def collect_alignments(reference, reads, dataset_name, out_path):
 	out_collect_file = '%s/collected.csv' % (out_path);
 
@@ -322,6 +353,18 @@ def collect_alignments(reference, reads, dataset_name, out_path):
 	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
 	out_sam = '%s/marginAlignGraphMap-anchor-%s.sam' % (out_path, dataset_name);
+	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+def collect_unique_alignments(reference, reads, dataset_name, out_path):
+	out_collect_file = '%s/collected.csv' % (out_path);
+
+	out_sam = '%s/LAST-%s-uniquebest.sam' % (out_path, dataset_name);
+	execute_command('%s/samscripts/src/alignmentstats.py file hcollect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/DALIGNER-%s-uniquebest.sam' % (out_path, dataset_name);
+	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
+
+	out_sam = '%s/marginAlign-%s-with_AS-uniquebest.sam' % (out_path, dataset_name);
 	execute_command('%s/samscripts/src/alignmentstats.py file collect %s %s %s 20 >> %s' % (tools_path, out_sam, reference, reads, out_collect_file));
 
 ### Params:
@@ -450,6 +493,79 @@ def generate_mutated_reference(reference_path, snp_rate, indel_rate, out_path):
 			print 'Removing file: "%s".' % (ref_file);
 			os.remove(ref_file);
 
+def make_consensus_reference_from_vcf(reference_file, vcf_file, out_consensus_sequence_file):
+	if (not os.path.exists(os.path.dirname(out_consensus_sequence_file))):
+		sys.stderr.write('Creating a folder on path: "%s".\n' % (os.path.dirname(out_consensus_sequence_file)));
+		os.makedirs(os.path.dirname(out_consensus_sequence_file));
+
+	sys.stderr.write('%s\n' % (reference_file));
+	sys.stderr.write('%s\n' % (vcf_file));
+	sys.stderr.write('%s\n' % (out_consensus_sequence_file));
+	sys.stderr.write('\n');
+
+	sys.stderr.write('Making a Picard dictionary of the reference.\n');
+	execute_command('java -jar %s/picard-tools-1.138/picard.jar CreateSequenceDictionary R= %s O= %s.dict' % (tools_path, reference_file, os.path.splitext(reference_file)[0]));
+	execute_command('samtools faidx %s' % (reference_file));
+
+	sys.stderr.write('Applying the VCF file to the reference to generate the alternate (consensus) sequence.\n');
+	execute_command('java -jar %s/GenomeAnalysisTK-3.4-46/GenomeAnalysisTK.jar -T FastaAlternateReferenceMaker -R %s -o %s -V %s' % (tools_path, reference_file, out_consensus_sequence_file, vcf_file));
+
+def compare_assembly_to_reference(reference_file, consensus_sequence_file, out_prefix):
+	if (not os.path.exists(os.path.dirname(out_prefix))):
+		sys.stderr.write('Creating a folder on path: "%s".\n' % (os.path.dirname(out_prefix)));
+		os.makedirs(os.path.dirname(out_prefix));
+
+	sys.stderr.write('Comparing the consensus sequence to the reference using MUMmer.\n');
+	execute_command('dnadiff %s %s -p %s' % (reference_file, consensus_sequence_file, out_prefix));
+
+def evaluate_consensus_sequences(reference_file, assembly_sequence_file, alignments_path, dataset_name):
+	vcf_file = '%s/analysis-intermediate/consensus-GraphMap-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
+	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
+	make_consensus_reference_from_vcf(assembly_sequence_file, vcf_file, consensus_sequence_file);
+	compare_assembly_to_reference(reference_file, consensus_sequence_file, dnadiff_prefix);
+
+	vcf_file = '%s/analysis-intermediate/consensus-GraphMap-anchor-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
+	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
+	make_consensus_reference_from_vcf(assembly_sequence_file, vcf_file, consensus_sequence_file);
+	compare_assembly_to_reference(reference_file, consensus_sequence_file, dnadiff_prefix);
+
+	vcf_file = '%s/analysis-intermediate/consensus-LAST-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
+	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
+	make_consensus_reference_from_vcf(assembly_sequence_file, vcf_file, consensus_sequence_file);
+	compare_assembly_to_reference(reference_file, consensus_sequence_file, dnadiff_prefix);
+
+	vcf_file = '%s/analysis-intermediate/consensus-BWAMEM-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
+	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
+	make_consensus_reference_from_vcf(assembly_sequence_file, vcf_file, consensus_sequence_file);
+	compare_assembly_to_reference(reference_file, consensus_sequence_file, dnadiff_prefix);
+
+	vcf_file = '%s/analysis-intermediate/consensus-BLASR-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
+	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
+	make_consensus_reference_from_vcf(assembly_sequence_file, vcf_file, consensus_sequence_file);
+	compare_assembly_to_reference(reference_file, consensus_sequence_file, dnadiff_prefix);
+
+	vcf_file = '%s/analysis-intermediate/consensus-marginAlign-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
+	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
+	make_consensus_reference_from_vcf(assembly_sequence_file, vcf_file, consensus_sequence_file);
+	compare_assembly_to_reference(reference_file, consensus_sequence_file, dnadiff_prefix);
+
+	vcf_file = '%s/analysis-intermediate/consensus-marginAlignGraphMap-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
+	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
+	make_consensus_reference_from_vcf(assembly_sequence_file, vcf_file, consensus_sequence_file);
+	compare_assembly_to_reference(reference_file, consensus_sequence_file, dnadiff_prefix);
+
+	vcf_file = '%s/analysis-intermediate/consensus-marginAlignGraphMap-anchor-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
+	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
+	make_consensus_reference_from_vcf(assembly_sequence_file, vcf_file, consensus_sequence_file);
+	compare_assembly_to_reference(reference_file, consensus_sequence_file, dnadiff_prefix);
 
 
 
