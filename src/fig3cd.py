@@ -109,10 +109,10 @@ def RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS():
 								('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
 								'asm_draft_ecolinmeth',
 								'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
-	collect_unique_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-								('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-								'asm_draft_ecolinmeth',
-								'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
+	# collect_unique_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
+	# 							('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+	# 							'asm_draft_ecolinmeth',
+	# 							'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
@@ -308,6 +308,8 @@ def evaluate_alignments(reference, reads, dataset_name, out_path):
 
 ### Filters only one unique (best) alignment for each read, and then evaluates the results.
 def evaluate_unique_alignments(reference, reads, dataset_name, out_path):
+	out_collect_file = '%s/collected.csv' % (out_path);
+	
 	out_sam = '%s/LAST-%s.sam' % (out_path, dataset_name);
 	out_sam_uniquebest = '%s/LAST-%s-uniquebest.sam' % (out_path, dataset_name);
 	execute_command('%s/samscripts/src/samfilter.py uniquebest %s %s' % (tools_path, out_sam, out_sam_uniquebest));
