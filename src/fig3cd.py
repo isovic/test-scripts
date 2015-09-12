@@ -26,8 +26,8 @@ def main():
 	# RUN_SV_TEST();
 	# RUN_AMPLICON_TEST();
 
-	# RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS();
-	RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
+	RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS();
+	# RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
 
 def RUN_CONSENSUS_TEST_ECOLIR73():
 	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH), 'nanopore');
@@ -81,44 +81,62 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 	# 					'mutated_ref_draftlike_ecolinmeth',
 	# 					'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
 
-	evaluate_unique_alignments(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
-						('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-						'mutated_ref_draftlike_ecolinmeth',
-						'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
-
-def RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS():
-	# run_all_mappers_only(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-	# 					('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-	# 					'asm_draft_ecolinmeth',
-	# 					'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH),
-	# 					'nanopore',
-	# 					do_not_recalc=True,
-	# 					is_circular=True,
-	# 					select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
-
-	# evaluate_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-	# 					('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-	# 					'asm_draft_ecolinmeth',
-	# 					'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
-
-	# collect_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-	# 					('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-	# 					'asm_draft_ecolinmeth',
-	# 					'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
-
-	# evaluate_unique_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-	# 							('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-	# 							'asm_draft_ecolinmeth',
-	# 							'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
-	# collect_unique_alignments(('%s/../data/assemblies/reference/rev_circular_draft.fasta' % SCRIPT_PATH),
-	# 							('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
-	# 							'asm_draft_ecolinmeth',
-	# 							'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH));
+	# evaluate_unique_alignments(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
+	# 					('%s/../data/nmeth/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH),
+	# 					'mutated_ref_draftlike_ecolinmeth',
+	# 					'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
 
 	evaluate_consensus_sequences(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH),
-								('%s/../data/assemblies/reference/wrapped_rev_circular_draft.fasta' % SCRIPT_PATH),
-								'%s/../data/out/asm_draft_ecolinmeth/' % (SCRIPT_PATH),
-								'asm_draft_ecolinmeth');
+								('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
+								'mutated_ref_draftlike_ecolinmeth',
+								'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
+
+def RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS():
+	# reference_path = ('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH);
+	# assembly_draft = ('%s/../data/assemblies/reference/wrapped_rev_circular_draft.fasta' % SCRIPT_PATH);
+	# reads_path = ('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH);
+	# dataset_name = 'asm_draft_ecolinmeth';
+	# out_path = '%s/../data/out/%s/' % (SCRIPT_PATH, dataset_name);
+
+	reference_path = ('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH);
+	assembly_draft = ('%s/../data/assemblies/reference_for_R7.3/wrapped_rev_circular_draft.fasta' % SCRIPT_PATH);
+	reads_path = ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH);
+	dataset_name = 'asm_draft_ecoliR7.3';
+	out_path = '%s/../data/out/%s/' % (SCRIPT_PATH, dataset_name);
+ 
+	run_all_mappers_only(assembly_draft,
+						reads_path,
+						dataset_name,
+						out_path,
+						'nanopore',
+						do_not_recalc=True,
+						is_circular=True,
+						select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
+
+	evaluate_alignments(assembly_draft,
+						reads_path,
+						dataset_name,
+						out_path);
+
+	evaluate_unique_alignments(assembly_draft,
+								reads_path,
+								dataset_name,
+								out_path);
+
+	evaluate_consensus_sequences(reference_path,
+								assembly_draft,
+								dataset_name,
+								out_path);
+
+	collect_alignments(assembly_draft,
+						reads_path,
+						dataset_name,
+						out_path);
+
+	collect_unique_alignments(assembly_draft,
+								reads_path,
+								dataset_name,
+								out_path);
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
@@ -526,7 +544,10 @@ def compare_assembly_to_reference(reference_file, consensus_sequence_file, out_p
 	sys.stderr.write('Comparing the consensus sequence to the reference using MUMmer.\n');
 	execute_command('dnadiff %s %s -p %s' % (reference_file, consensus_sequence_file, out_prefix));
 
-def evaluate_consensus_sequences(reference_file, assembly_sequence_file, alignments_path, dataset_name):
+def evaluate_consensus_sequences(reference_file, assembly_sequence_file, dataset_name, alignments_path):
+	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, 'ref_vs_draftasm', 'ref_vs_draftasm');
+	compare_assembly_to_reference(reference_file, assembly_sequence_file, dnadiff_prefix);
+
 	vcf_file = '%s/analysis-intermediate/consensus-DALIGNER-%s-cov_20.variant.vcf' % (alignments_path, dataset_name);
 	consensus_sequence_file = '%s/consensus_sequence/%s.fasta' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]));
 	dnadiff_prefix = '%s/dnadiff/%s/%s' % (alignments_path, os.path.basename(os.path.splitext(vcf_file)[0]), os.path.basename(os.path.splitext(vcf_file)[0]));
