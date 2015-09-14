@@ -165,6 +165,10 @@ def RUN_AMPLICON_TEST():
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:29909854-29913805', 'HLA-A'],
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:31321279-31325303', 'HLA-B']];
 
+	regions_graphmap_special = [['gi_224589814_ref_NC_000022_10_:42522077-42527144', 'CYP2D6'],
+							['gi_224589818_ref_NC_000006_11_:29909854-29913805', 'HLA-A'],
+							['gi_224589818_ref_NC_000006_11_:31321279-31325303', 'HLA-B']];
+
 	dryrun = False;
 	# dryrun = True;
 
@@ -207,6 +211,8 @@ def RUN_AMPLICON_TEST():
 			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower())):
 				# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
 				region = regions_marginAlign[current_region];
+				if ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower()):
+					region = regions_graphmap_special[current_region];
 				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
 				reference_file_for_filtering = marginAlign_reference_file;
 
