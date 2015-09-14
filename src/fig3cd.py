@@ -658,9 +658,12 @@ def filter_spanning_reads(dry_run, region, reads_path, sam_in_path, sam_out_fold
 		sam_basename = os.path.basename(os.path.splitext(sam_in_path)[0]);
 		sys.stderr.write('[-2] Removing special characters from the SAM qnames and rnames.\n');
 		execute_command_w_dryrun(dry_run, '%s/samfilter.py marginalign %s %s/%s-nospecialchars.sam' % (SAMSCRIPTS, sam_in_path, sam_out_folder, sam_basename));
-		sys.stderr.write('[-1] Generating the alignment score so that alignments can be comparable.\n');
-		execute_command_w_dryrun(dry_run, '%s/samfilter.py generateAS %s %s/%s-nospecialchars.sam %s/%s-nospecialchars-with_AS.sam' % (SAMSCRIPTS, reference_path, sam_out_folder, sam_basename, sam_out_folder, sam_basename));
-		sam_in_path = '%s/%s-nospecialchars-with_AS.sam' % (sam_out_folder, os.path.basename(os.path.splitext(sam_in_path)[0]));
+		sam_in_path = '%s/%s-nospecialchars.sam' % (sam_out_folder, os.path.basename(os.path.splitext(sam_in_path)[0]));
+
+		if ('marginalign' in os.path.basename(sam_in_path).lower()):
+			sys.stderr.write('[-1] Generating the alignment score so that alignments can be comparable.\n');
+			execute_command_w_dryrun(dry_run, '%s/samfilter.py generateAS %s %s/%s-nospecialchars.sam %s/%s-nospecialchars-with_AS.sam' % (SAMSCRIPTS, reference_path, sam_out_folder, sam_basename, sam_out_folder, sam_basename));
+			sam_in_path = '%s/%s-nospecialchars-with_AS.sam' % (sam_out_folder, os.path.basename(os.path.splitext(sam_in_path)[0]));
 
 	# if (('last' in os.path.basename(sam_in_path).lower()) or ('marginalign' in os.path.basename(sam_in_path).lower())):
 	# 	sys.stderr.write('[0] Adding quality values to alignments...\n');
