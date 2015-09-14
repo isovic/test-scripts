@@ -169,12 +169,16 @@ def RUN_AMPLICON_TEST():
 							['gi_224589818_ref_NC_000006_11_:29909854-29913805', 'HLA-A'],
 							['gi_224589818_ref_NC_000006_11_:31321279-31325303', 'HLA-B']];
 
+# gi|224589818|ref|NC_000006.11| Homo sapiens chromosome 6, GRCh37.p13 Primary Assembly
+# gi|224589814|ref|NC_000022.10| Homo sapiens chromosome 22, GRCh37.p13 Primary Assembly
+
 	dryrun = False;
 	# dryrun = True;
 
 	# sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
 	sam_files = [
-					'%s/graphmap-params_20150525-all_reads-anchor.sam' % (out_path),
+					# '%s/graphmap-params_20150525-all_reads-anchor.sam' % (out_path),
+					'%s/graphmap-params_20150525-all_reads-anchor_full_ref.sam' % (out_path),
 					# '%s/BWAMEM-20150524-all_reads.sam' % (out_path),
 					# '%s/LAST-20150524-all_reads-addedqv.sam' % (out_path),
 					# '%s/BLASR-20150524-all_reads.sam' % (out_path),
@@ -208,10 +212,10 @@ def RUN_AMPLICON_TEST():
 
 			reference_file_for_filtering = None;
 			region_to_use = region;
-			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower())):
+			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor_full_ref' in os.path.basename(sam_path).lower())):
 				# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
 				region = regions_marginAlign[current_region];
-				if ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower()):
+				if ('graphmap-params_20150525-all_reads-anchor_full_ref' in os.path.basename(sam_path).lower()):
 					region = regions_graphmap_special[current_region];
 				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
 				reference_file_for_filtering = marginAlign_reference_file;
@@ -222,7 +226,7 @@ def RUN_AMPLICON_TEST():
 			out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
 			sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 
-			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower())):
+			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor_full_ref' in os.path.basename(sam_path).lower())):
 				# sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 				jobtree = 'jobTree';
 				if (os.path.exists(jobtree)):
@@ -654,7 +658,7 @@ def filter_spanning_reads(dry_run, region, reads_path, sam_in_path, sam_out_fold
 		sys.stderr.write('Creating folder "%s".\n' % (sam_out_folder));
 		os.makedirs(sam_out_folder);
 
-	if (('marginalign' in os.path.basename(sam_in_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_in_path).lower())):
+	if (('marginalign' in os.path.basename(sam_in_path).lower()) or ('graphmap-params_20150525-all_reads-anchor_full_ref' in os.path.basename(sam_in_path).lower())):
 		sam_basename = os.path.basename(os.path.splitext(sam_in_path)[0]);
 		sys.stderr.write('[-2] Removing special characters from the SAM qnames and rnames.\n');
 		execute_command_w_dryrun(dry_run, '%s/samfilter.py marginalign %s %s/%s-nospecialchars.sam' % (SAMSCRIPTS, sam_in_path, sam_out_folder, sam_basename));
