@@ -27,7 +27,7 @@ def main():
 	RUN_AMPLICON_TEST();
 
 	# RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS();
-	# RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
+	RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
 
 def RUN_CONSENSUS_TEST_ECOLIR73():
 	run_all_mappers_only(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH), 'ecoliR7.3', '%s/../data/out/fig3cd/' % (SCRIPT_PATH), 'nanopore');
@@ -165,8 +165,8 @@ def RUN_AMPLICON_TEST():
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:29909854-29913805', 'HLA-A'],
 							['gi_224589818_ref_NC_000006_11__Homo_sapiens_chromosome_6__GRCh37_p13_Primary_Assembly:31321279-31325303', 'HLA-B']];
 
-	# dryrun = False;
-	dryrun = True;
+	dryrun = False;
+	# dryrun = True;
 
 	# sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
 	sam_files = [
