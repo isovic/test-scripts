@@ -204,7 +204,7 @@ def RUN_AMPLICON_TEST():
 
 			reference_file_for_filtering = None;
 			region_to_use = region;
-			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower())):
+			if (('marginalign' in os.path.basename(sam_path).lower())):
 				# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
 				region = regions_marginAlign[current_region];
 				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
