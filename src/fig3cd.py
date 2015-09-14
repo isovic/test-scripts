@@ -24,9 +24,9 @@ def main():
 	# RUN_CONSENSUS_TEST_ECOLINMETH();
 	# RUN_MUTATED_REFERENCE_TEST();
 	# RUN_SV_TEST();
-	# RUN_AMPLICON_TEST();
+	RUN_AMPLICON_TEST();
 
-	RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS();
+	# RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS();
 	# RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS();
 
 def RUN_CONSENSUS_TEST_ECOLIR73():
@@ -54,6 +54,7 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.0006, 0.0067, 'data/mutated-refs/draftlike');
 	### This mutates the reference to include similar number of SNPs and indels as Loman/Simpson nanopore-only assembly pipeline (~1200 SNPs and ~17000 indels).
 	# generate_mutated_reference(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH), 0.00019, 0.0027, 'data/mutated-refs/finallike');
+
 	# run_all_mappers_only(('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
 	# 					# ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH),
 	# 					# 'mutated_ref_draftlike_ecoliR7.3',
@@ -86,57 +87,59 @@ def RUN_MUTATED_REFERENCE_ADDITIONAL_TESTS():
 	# 					'mutated_ref_draftlike_ecolinmeth',
 	# 					'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
 
-	evaluate_consensus_sequences(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH),
-								('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
-								'mutated_ref_draftlike_ecolinmeth',
-								'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
+	# evaluate_consensus_sequences(('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH),
+	# 							('%s/../data/mutated-refs/draftlike/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH),
+	# 							'mutated_ref_draftlike_ecolinmeth',
+	# 							'%s/../data/out/mutated_ref_draftlike_ecolinmeth/' % (SCRIPT_PATH));
+
+	reference_path = ('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH);
+	assembly_draft = ('%s/../data/mutated-refs/draftlike_for_R7.3/mutated_escherichia_coli_snp0.000600_indel0.006700.fa' % SCRIPT_PATH);
+	reads_path = ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH);
+	dataset_name = 'mutated_ref_draftlike_ecoliR7.3';
+	out_path = '%s/../data/out/%s/' % (SCRIPT_PATH, dataset_name);
+ 
+	run_all_mappers_only(assembly_draft, reads_path, dataset_name, out_path, 'nanopore', do_not_recalc=True, is_circular=True,
+						select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
+
+	evaluate_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	evaluate_unique_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	evaluate_consensus_sequences(reference_path, assembly_draft, dataset_name, out_path);
+	# collect_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	# collect_unique_alignments(assembly_draft, reads_path, dataset_name, out_path);
 
 def RUN_DRAFT_ASSEMBLY_REFERENCE_TESTS():
-	# reference_path = ('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH);
-	# assembly_draft = ('%s/../data/assemblies/reference/wrapped_rev_circular_draft.fasta' % SCRIPT_PATH);
-	# reads_path = ('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH);
-	# dataset_name = 'asm_draft_ecolinmeth';
-	# out_path = '%s/../data/out/%s/' % (SCRIPT_PATH, dataset_name);
+	### Run using the Loman/Simpson E. Coli dataset that was originally used for the draft assembly.
+	reference_path = ('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH);
+	assembly_draft = ('%s/../data/assemblies/reference/wrapped_rev_circular_draft.fasta' % SCRIPT_PATH);
+	reads_path = ('%s/../data/assemblies/reads/reads-nmeth-all_2d.fastq' % SCRIPT_PATH);
+	dataset_name = 'asm_draft_ecolinmeth';
+	out_path = '%s/../data/out/%s/' % (SCRIPT_PATH, dataset_name);
 
+	run_all_mappers_only(assembly_draft, reads_path, dataset_name, out_path, 'nanopore', do_not_recalc=True, is_circular=True,
+						select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
+	evaluate_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	evaluate_unique_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	evaluate_consensus_sequences(reference_path, assembly_draft, dataset_name, out_path);
+	# collect_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	# collect_unique_alignments(assembly_draft, reads_path, dataset_name, out_path);
+
+
+	### Repeat the same, but use another dataset of reads.
 	reference_path = ('%s/../data/reference/escherichia_coli.fa' % SCRIPT_PATH);
 	assembly_draft = ('%s/../data/assemblies/reference_for_R7.3/wrapped_rev_circular_draft.fasta' % SCRIPT_PATH);
 	reads_path = ('%s/../data/reads-ecoliR7.3/ecoliR7.3.fastq' % SCRIPT_PATH);
 	dataset_name = 'asm_draft_ecoliR7.3';
 	out_path = '%s/../data/out/%s/' % (SCRIPT_PATH, dataset_name);
  
-	run_all_mappers_only(assembly_draft,
-						reads_path,
-						dataset_name,
-						out_path,
-						'nanopore',
-						do_not_recalc=True,
-						is_circular=True,
+	run_all_mappers_only(assembly_draft, reads_path, dataset_name, out_path, 'nanopore', do_not_recalc=True, is_circular=True,
 						select_mappers=['daligner', 'graphmap', 'graphmap-anchor', 'last', 'bwamem', 'blasr', 'marginalign', 'marginaligngraphmap', 'marginaligngraphmap-anchor']);
+	evaluate_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	evaluate_unique_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	evaluate_consensus_sequences(reference_path, assembly_draft, dataset_name, out_path);
+	# collect_alignments(assembly_draft, reads_path, dataset_name, out_path);
+	# collect_unique_alignments(assembly_draft, reads_path, dataset_name, out_path);
 
-	evaluate_alignments(assembly_draft,
-						reads_path,
-						dataset_name,
-						out_path);
 
-	evaluate_unique_alignments(assembly_draft,
-								reads_path,
-								dataset_name,
-								out_path);
-
-	evaluate_consensus_sequences(reference_path,
-								assembly_draft,
-								dataset_name,
-								out_path);
-
-	collect_alignments(assembly_draft,
-						reads_path,
-						dataset_name,
-						out_path);
-
-	collect_unique_alignments(assembly_draft,
-								reads_path,
-								dataset_name,
-								out_path);
 
 def RUN_SV_TEST():
 	### First run the mappers on the original reference, to detect the differences that normaly exist and need to be omitted from further comparisons.
@@ -144,6 +147,7 @@ def RUN_SV_TEST():
 	### Second, run the mappers on the modified reference.
 	run_all_mappers_only(('%s/../data/reference_for_sv/escherichia_coli-indel_events.fa' % SCRIPT_PATH), ('%s/../data/reads-all_2d_for_sv/all_2d_for_sv.fastq' % SCRIPT_PATH), 'all_2d_for_sv', '%s/../data/out/all_2d_for_sv-indel_ref/' % (SCRIPT_PATH), 'nanopore');
 
+### This function takes an input SAM file, filters only unique alignment, filters only alignments withing the amplicon regions, and then runs variant calling. In case aligner was marginAlign, marginCaller is used.
 def RUN_AMPLICON_TEST():
 	reference = '%s/../data/amplicons-f1000/reference/ref_chr6_chr22-hg19_v38.fa' % (SCRIPT_PATH);
 	reads = '%s/../data/amplicons-f1000/reads/reads_2d-f1000.fastq' % (SCRIPT_PATH);
@@ -167,12 +171,12 @@ def RUN_AMPLICON_TEST():
 	# sam_path = '%s/marginAlign-nanopore-nospecialchars-with_AS.sam' % (out_path);
 	sam_files = [
 					'%s/graphmap-params_20150525-all_reads-anchor.sam' % (out_path),
-					'%s/BWAMEM-20150524-all_reads.sam' % (out_path),
-					'%s/LAST-20150524-all_reads-addedqv.sam' % (out_path),
-					'%s/BLASR-20150524-all_reads.sam' % (out_path),
-					'%s/marginAlign-nanopore.sam' % (out_path),
-					'%s/marginAlignGraphMap-nanopore' % (out_path),
-					'%s/marginAlignGraphMap-anchor-nanopore' % (out_path)
+					# '%s/BWAMEM-20150524-all_reads.sam' % (out_path),
+					# '%s/LAST-20150524-all_reads-addedqv.sam' % (out_path),
+					# '%s/BLASR-20150524-all_reads.sam' % (out_path),
+					# '%s/marginAlign-nanopore.sam' % (out_path),
+					# '%s/marginAlignGraphMap-nanopore' % (out_path),
+					# '%s/marginAlignGraphMap-anchor-nanopore' % (out_path)
 
 					# '%s/marginAlignGraphMap-nanopore.sam' % (out_path),
 					# '%s/marginAlignGraphMap-anchor-nanopore.sam' % (out_path)
@@ -200,7 +204,7 @@ def RUN_AMPLICON_TEST():
 
 			reference_file_for_filtering = None;
 			region_to_use = region;
-			if ('marginalign' in os.path.basename(sam_path).lower()):
+			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower())):
 				# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
 				region = regions_marginAlign[current_region];
 				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
@@ -212,13 +216,13 @@ def RUN_AMPLICON_TEST():
 			out_vcf = '%s/%s.vcf' % (sam_out_folder, os.path.splitext(os.path.basename(sam_2d_reads_in_region))[0]);
 			sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 
-			if ('marginalign' in os.path.basename(sam_path).lower()):
+			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower())):
 				# sys.stderr.write('Return: "%s".\n' % (str([bam_all_reads_in_region, bam_1d_reads_in_region, bam_2d_reads_in_region])));
 				jobtree = 'jobTree';
 				if (os.path.exists(jobtree)):
 					execute_command('rm -r %s' % (jobtree));
 				### Call variants using marginCaller.
-				# execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
+				execute_command('%s/aligneval/aligners/marginAlign/marginCaller %s %s %s --jobTree %s' % (tools_path, sam_2d_reads_in_region, marginAlign_reference_file, out_vcf, jobtree));
 
 			### Evaluate the found variants.
 			vcf_known_mutations_path = '%s/../data/amplicons-f1000/truth_variants/sorted-variants-dbSNP_and_NA12878-%s_amplicon-splitsnps.vcf' % (SCRIPT_PATH, region[1]);
