@@ -204,7 +204,7 @@ def RUN_AMPLICON_TEST():
 
 			reference_file_for_filtering = None;
 			region_to_use = region;
-			if (('marginalign' in os.path.basename(sam_path).lower())):
+			if (('marginalign' in os.path.basename(sam_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_path).lower())):
 				# region_to_use = [re.sub('[^0-9a-zA-Z]', '_', region[0]), region[1]];
 				region = regions_marginAlign[current_region];
 				marginAlign_reference_file = os.path.splitext(reference)[0] + '-marginAlign.fa';
@@ -648,7 +648,7 @@ def filter_spanning_reads(dry_run, region, reads_path, sam_in_path, sam_out_fold
 		sys.stderr.write('Creating folder "%s".\n' % (sam_out_folder));
 		os.makedirs(sam_out_folder);
 
-	if (('marginalign' in os.path.basename(sam_in_path).lower())):
+	if (('marginalign' in os.path.basename(sam_in_path).lower()) or ('graphmap-params_20150525-all_reads-anchor' in os.path.basename(sam_in_path).lower())):
 		sam_basename = os.path.basename(os.path.splitext(sam_in_path)[0]);
 		sys.stderr.write('[-2] Removing special characters from the SAM qnames and rnames.\n');
 		execute_command_w_dryrun(dry_run, '%s/samfilter.py marginalign %s %s/%s-nospecialchars.sam' % (SAMSCRIPTS, sam_in_path, sam_out_folder, sam_basename));
