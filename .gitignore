@@ -18,6 +18,7 @@ data/nmeth/
 data/in/
 data/assemblies/
 data/mutated-refs/
+data/sv/
 tools/
 temp/
 jobTree/
@@ -35,3 +36,4 @@ packs/*
 # !data/amplicons-f1000/reads/reads_all-f1000.fastq
 # !data/amplicons-f1000/reference/ref_chr6_chr22-hg19_v38.fa
 
+data/consensus-ecoliR7.3/

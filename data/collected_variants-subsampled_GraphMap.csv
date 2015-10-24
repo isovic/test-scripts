@@ -1,0 +1,13 @@
+Mapper	Region	TP	FP	Total	Truth	Truth-PASS	Truth-NonPASS	FP-PASS	FP-NonPASS	FN-PASS	FN-NonPASS
+subsampled-GraphMap-CYP2D6-fxdhnames-with_AS-with_qv-uniquebest-CYP2D6-evalue-1-2d	CYP2D6	13	1	14	312	17	307	1	0	6	268	lofreq
+subsampled-GraphMap-CYP2D6-fxdhnames-with_AS-with_qv-uniquebest-HLA-A-evalue-1-2d	HLA-A	0	0	0	590	52	570	0	0	52	496	lofreq
+subsampled-GraphMap-CYP2D6-fxdhnames-with_AS-with_qv-uniquebest-HLA-B-evalue-1-2d	HLA-B	0	0	0	577	87	546	0	0	87	412	lofreq
+												
+subsampled-GraphMap-HLA-A-fxdhnames-with_AS-with_qv-uniquebest-CYP2D6-evalue-1-2d	CYP2D6	0	0	0	312	17	307	0	0	17	270	lofreq
+subsampled-GraphMap-HLA-A-fxdhnames-with_AS-with_qv-uniquebest-HLA-A-evalue-1-2d	HLA-A	1	0	1	590	52	570	0	0	51	496	lofreq
+subsampled-GraphMap-HLA-A-fxdhnames-with_AS-with_qv-uniquebest-HLA-B-evalue-1-2d	HLA-B	0	0	0	577	87	546	0	0	87	412	lofreq
+												
+subsampled-GraphMap-HLA-B-fxdhnames-with_AS-with_qv-uniquebest-CYP2D6-evalue-1-2d	CYP2D6	0	0	0	312	17	307	0	0	17	270	lofreq
+subsampled-GraphMap-HLA-B-fxdhnames-with_AS-with_qv-uniquebest-HLA-A-evalue-1-2d	HLA-A	0	0	0	590	52	570	0	0	52	496	lofreq
+subsampled-GraphMap-HLA-B-fxdhnames-with_AS-with_qv-uniquebest-HLA-B-evalue-1-2d	HLA-B	28	1	29	577	87	546	1	0	59	412	lofreq
+												

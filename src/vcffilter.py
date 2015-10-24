@@ -247,10 +247,10 @@ def count_nonpass_variants(vcf_file, verbose=True):
 			continue;
 
 		if (split_line[filter_position].lower() == 'pass'):
-			print '[%d, %d] PASS: %s' % (num_pass_snps, num_nonpass_snps, line.strip());
+			# print '[%d, %d] PASS: %s' % (num_pass_snps, num_nonpass_snps, line.strip());
 			num_pass_snps += 1;
 		else:
-			print '[%d, %d] Non-PASS: %s' % (num_pass_snps, num_nonpass_snps, line.strip());
+			# print '[%d, %d] Non-PASS: %s' % (num_pass_snps, num_nonpass_snps, line.strip());
 			num_nonpass_snps += 1;
 
 	fp_in.close();
